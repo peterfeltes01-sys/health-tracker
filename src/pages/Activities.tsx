@@ -56,7 +56,7 @@ export function Activities() {
         <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-2xl p-1 mb-5">
           {([
             { key: 'activities', label: '🏃 Aktivitäten' },
-            { key: 'hydration', label: '💧 Wasser' },
+            { key: 'hydration', label: '💧 Flüssigkeit' },
             { key: 'steps', label: '🦶 Schritte' },
           ] as { key: Tab; label: string }[]).map(({ key, label }) => (
             <button
@@ -113,13 +113,13 @@ export function Activities() {
               <div className="text-primary-200 mt-1">von {formatSteps(settings.dailyStepGoal)} Schritten</div>
             </div>
 
-            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-4 space-y-3">
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Schritte manuell eingeben</p>
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-4">
+              <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-3">Schritte eingeben</p>
               <div className="flex gap-2">
                 <Input
                   type="number"
                   min="1"
-                  placeholder="z.B. 3.000"
+                  placeholder="Anzahl Schritte"
                   value={manualSteps}
                   onChange={(e) => setManualSteps(e.target.value)}
                   className="flex-1"
@@ -130,12 +130,12 @@ export function Activities() {
                     if (n > 0) { addSteps(n, 'manual'); setManualSteps('') }
                   }}
                 >
-                  +
+                  Hinzufügen
                 </Button>
               </div>
               <button
                 onClick={() => setShowStepModal(true)}
-                className="flex items-center gap-1.5 text-xs text-primary-500 dark:text-primary-400"
+                className="flex items-center gap-1.5 text-xs text-gray-400 mt-2"
               >
                 <Footprints size={13} /> Mit Datum & Uhrzeit hinzufügen
               </button>
