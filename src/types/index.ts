@@ -16,7 +16,7 @@ export interface Activity {
   distanceKm?: number
   wattage?: number
   elevationGain?: number
-  bikeType?: 'mountain' | 'road' | 'trekking'
+  bikeType?: 'mountain' | 'road' | 'trekking' | 'ebike'
   calories?: number
   caloriesEstimated: boolean
   intensity: 'low' | 'medium' | 'high'

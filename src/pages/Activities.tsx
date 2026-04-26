@@ -111,17 +111,6 @@ export function Activities() {
             <div className="bg-gradient-to-br from-primary-500 to-primary-700 rounded-2xl p-5 text-white text-center">
               <div className="text-5xl font-bold">{formatSteps(todaySteps)}</div>
               <div className="text-primary-200 mt-1">von {formatSteps(settings.dailyStepGoal)} Schritten</div>
-              <div className="mt-3 flex gap-2 justify-center">
-                <Button size="sm" onClick={() => addSteps(500)} className="bg-white/20 hover:bg-white/30 text-white border-0">
-                  +500
-                </Button>
-                <Button size="sm" onClick={() => addSteps(1000)} className="bg-white/20 hover:bg-white/30 text-white border-0">
-                  +1.000
-                </Button>
-                <Button size="sm" onClick={() => addSteps(5000)} className="bg-white/20 hover:bg-white/30 text-white border-0">
-                  +5.000
-                </Button>
-              </div>
             </div>
 
             <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-4 space-y-3">

@@ -57,6 +57,7 @@ export const BIKE_TYPES = [
   { value: 'mountain', label: '🚵 Mountainbike' },
   { value: 'road', label: '🚴 Rennrad' },
   { value: 'trekking', label: '🚲 Trekkingbike' },
+  { value: 'ebike', label: '⚡ E-Bike' },
 ]
 
 export const PACE_ACTIVITIES = ['run', 'walk', 'hike']
