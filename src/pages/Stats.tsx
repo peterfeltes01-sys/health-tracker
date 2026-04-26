@@ -68,6 +68,8 @@ export function Stats() {
             </button>
           </div>
 
+          <ActivityPieChart activities={monthActivities} />
+
           <WeeklyGoals
             activities={weekActivities}
             calGoal={settings.weeklyCalorieGoal ?? 2000}
@@ -83,8 +85,6 @@ export function Stats() {
             stepGoal={settings.dailyStepGoal}
             hydrationGoal={settings.dailyHydrationGoalMl}
           />
-
-          <ActivityPieChart activities={monthActivities} />
 
           <section>
             <h2 className="text-base font-bold text-gray-900 dark:text-white mb-3">Monat im Überblick</h2>

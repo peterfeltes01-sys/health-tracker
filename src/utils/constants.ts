@@ -4,13 +4,14 @@ export const ACTIVITIES: ActivityDefinition[] = [
   { id: 'walk', label: 'Spaziergang', icon: '🚶', hasDistance: true, defaultCalPerMin: 4 },
   { id: 'hike', label: 'Wandern', icon: '🥾', hasDistance: true, defaultCalPerMin: 6 },
   { id: 'bike_outdoor', label: 'Outdoor-Radtour', icon: '🚴', hasDistance: true, hasWattage: true, defaultCalPerMin: 8 },
-  { id: 'bike_indoor', label: 'Indoor-Radtour', icon: '🚲', hasDistance: false, hasWattage: true, defaultCalPerMin: 7 },
+  { id: 'bike_indoor', label: 'Indoor-Radtour', icon: '🚲', hasDistance: true, hasWattage: true, defaultCalPerMin: 7 },
   { id: 'run', label: 'Laufen', icon: '🏃', hasDistance: true, defaultCalPerMin: 10 },
   { id: 'swim', label: 'Schwimmen', icon: '🏊', hasDistance: true, defaultCalPerMin: 9 },
   { id: 'strength', label: 'Krafttraining', icon: '💪', hasDistance: false, defaultCalPerMin: 5 },
   { id: 'yoga', label: 'Yoga', icon: '🧘', hasDistance: false, defaultCalPerMin: 3 },
   { id: 'stretching', label: 'Stretching', icon: '🤸', hasDistance: false, defaultCalPerMin: 2 },
   { id: 'cornhole', label: 'Cornhole', icon: '🎯', hasDistance: false, defaultCalPerMin: 3, category: 'sport_sonstige' },
+  { id: 'dance', label: 'Tanzen', icon: '💃', hasDistance: false, defaultCalPerMin: 5 },
   { id: 'other', label: 'Sonstige Aktivität', icon: '⚡', hasDistance: false, defaultCalPerMin: 4 },
 ]
 
@@ -41,6 +42,7 @@ export const ACTIVITY_COLORS: Record<string, string> = {
   yoga:         '#ec4899',
   stretching:   '#f472b6',
   cornhole:     '#eab308',
+  dance:        '#f43f5e',
   other:        '#94a3b8',
 }
 

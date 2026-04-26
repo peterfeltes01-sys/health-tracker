@@ -72,7 +72,7 @@ export function getWeekRange(offsetWeeks: number): { from: string; to: string; l
   const sunday = new Date(monday)
   sunday.setDate(monday.getDate() + 6)
   const cap = sunday > today ? today : sunday
-  const fmt = (d: Date) => d.toISOString().split('T')[0]
+  const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
   const weekNum = getISOWeek(monday)
   const label = offsetWeeks === 0 ? 'Diese Woche' : offsetWeeks === -1 ? 'Letzte Woche' : `KW ${weekNum}`
   return { from: fmt(monday), to: fmt(cap), label }
