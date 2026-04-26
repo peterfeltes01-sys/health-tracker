@@ -3,7 +3,7 @@ import { getAuth } from 'firebase/auth'
 import {
   getFirestore,
   initializeFirestore,
-  persistentLocalCache,
+  memoryLocalCache,
 } from 'firebase/firestore'
 
 const firebaseConfig = {
@@ -23,7 +23,7 @@ export const auth = getAuth(app)
 let _db: ReturnType<typeof getFirestore>
 try {
   _db = initializeFirestore(app, {
-    localCache: persistentLocalCache(),
+    localCache: memoryLocalCache(),
     ignoreUndefinedProperties: true,
   })
 } catch {

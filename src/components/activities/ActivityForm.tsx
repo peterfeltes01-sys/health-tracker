@@ -110,8 +110,9 @@ export function ActivityForm({ initial, onSave, onCancel }: ActivityFormProps) {
     setSaveError(null)
     try {
       await onSave(activity)
-    } catch {
-      setSaveError('Speichern fehlgeschlagen. Bitte erneut versuchen.')
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err)
+      setSaveError(`Speichern fehlgeschlagen: ${detail}`)
       setSaving(false)
     }
   }
