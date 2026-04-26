@@ -24,6 +24,7 @@ let _db: ReturnType<typeof getFirestore>
 try {
   _db = initializeFirestore(app, {
     localCache: persistentLocalCache(),
+    ignoreUndefinedProperties: true,
   })
 } catch {
   _db = getFirestore(app)
