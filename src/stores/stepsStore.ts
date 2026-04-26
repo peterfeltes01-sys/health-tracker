@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { StepEntry } from '../types'
-import { repository } from '../repositories/LocalStorageRepository'
+import { getRepository } from '../lib/repositoryRegistry'
 import { generateId, toISODate } from '../utils/calculations'
 
 interface StepsState {
@@ -12,6 +12,7 @@ interface StepsState {
   addStepsManual: (steps: number, date: string, time?: string) => Promise<void>
   deleteEntry: (id: string) => Promise<void>
   getTotalForDate: (date: string) => number
+  reset: () => void
 }
 
 export const useStepsStore = create<StepsState>((set, get) => ({
@@ -20,13 +21,13 @@ export const useStepsStore = create<StepsState>((set, get) => ({
 
   loadByDate: async (date) => {
     set({ loading: true })
-    const entries = await repository.getStepsByDate(date)
+    const entries = await getRepository().getStepsByDate(date)
     set({ entries, loading: false })
   },
 
   loadByRange: async (from, to) => {
     set({ loading: true })
-    const entries = await repository.getStepsByDateRange(from, to)
+    const entries = await getRepository().getStepsByDateRange(from, to)
     set({ entries, loading: false })
   },
 
@@ -39,9 +40,8 @@ export const useStepsStore = create<StepsState>((set, get) => ({
       timestamp: new Date().toISOString(),
       source,
     }
-    await repository.addSteps(entry)
-    const current = get().entries
-    set({ entries: [...current, entry] })
+    await getRepository().addSteps(entry)
+    set({ entries: [...get().entries, entry] })
   },
 
   addStepsManual: async (steps, date, time) => {
@@ -52,19 +52,19 @@ export const useStepsStore = create<StepsState>((set, get) => ({
       timestamp: time ? `${date}T${time}:00.000Z` : new Date().toISOString(),
       source: 'manual',
     }
-    await repository.addSteps(entry)
-    const current = get().entries
-    set({ entries: [...current, entry] })
+    await getRepository().addSteps(entry)
+    set({ entries: [...get().entries, entry] })
   },
 
   deleteEntry: async (id) => {
-    await repository.deleteSteps(id)
+    await getRepository().deleteSteps(id)
     set({ entries: get().entries.filter((e) => e.id !== id) })
   },
 
-  getTotalForDate: (date) => {
-    return get().entries
-      .filter((e) => e.date === date)
-      .reduce((sum, e) => sum + e.steps, 0)
-  },
+  getTotalForDate: (date) =>
+    get()
+      .entries.filter((e) => e.date === date)
+      .reduce((sum, e) => sum + e.steps, 0),
+
+  reset: () => set({ entries: [], loading: false }),
 }))

@@ -2,6 +2,7 @@ import { Header } from '../components/layout/Header'
 import { PageWrapper } from '../components/layout/PageWrapper'
 import { SettingsForm } from '../components/settings/SettingsForm'
 import { DataManagement } from '../components/settings/DataManagement'
+import { ProfileSection } from '../components/settings/ProfileSection'
 
 export function Settings() {
   return (
@@ -9,10 +10,11 @@ export function Settings() {
       <Header title="Einstellungen" />
       <PageWrapper>
         <div className="space-y-5">
+          <ProfileSection />
           <SettingsForm />
           <DataManagement />
           <div className="text-center py-4 text-xs text-gray-400 dark:text-gray-600">
-            HealthTrack v1.0 — Triathlon · Cornhole · Wandern
+            HealthTrack v2.0 · Firebase · Triathlon · Cornhole · Wandern
           </div>
         </div>
       </PageWrapper>

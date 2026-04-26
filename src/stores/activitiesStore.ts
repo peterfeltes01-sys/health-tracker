@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { Activity } from '../types'
-import { repository } from '../repositories/LocalStorageRepository'
+import { getRepository } from '../lib/repositoryRegistry'
 
 interface ActivitiesState {
   entries: Activity[]
@@ -11,6 +11,7 @@ interface ActivitiesState {
   updateActivity: (activity: Activity) => Promise<void>
   deleteActivity: (id: string) => Promise<void>
   getForDate: (date: string) => Activity[]
+  reset: () => void
 }
 
 export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
@@ -19,30 +20,32 @@ export const useActivitiesStore = create<ActivitiesState>((set, get) => ({
 
   loadByDate: async (date) => {
     set({ loading: true })
-    const entries = await repository.getActivitiesByDate(date)
+    const entries = await getRepository().getActivitiesByDate(date)
     set({ entries, loading: false })
   },
 
   loadByRange: async (from, to) => {
     set({ loading: true })
-    const entries = await repository.getActivitiesByDateRange(from, to)
+    const entries = await getRepository().getActivitiesByDateRange(from, to)
     set({ entries, loading: false })
   },
 
   addActivity: async (activity) => {
-    await repository.addActivity(activity)
+    await getRepository().addActivity(activity)
     set({ entries: [...get().entries, activity] })
   },
 
   updateActivity: async (activity) => {
-    await repository.updateActivity(activity)
+    await getRepository().updateActivity(activity)
     set({ entries: get().entries.map((a) => (a.id === activity.id ? activity : a)) })
   },
 
   deleteActivity: async (id) => {
-    await repository.deleteActivity(id)
+    await getRepository().deleteActivity(id)
     set({ entries: get().entries.filter((a) => a.id !== id) })
   },
 
   getForDate: (date) => get().entries.filter((a) => a.date === date),
+
+  reset: () => set({ entries: [], loading: false }),
 }))

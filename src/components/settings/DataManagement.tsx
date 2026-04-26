@@ -1,9 +1,17 @@
 import { useState } from 'react'
 import { Download, Upload, Trash2, Moon, Sun, Monitor } from 'lucide-react'
-import { repository } from '../../repositories/LocalStorageRepository'
+import { getRepository } from '../../lib/repositoryRegistry'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { Button } from '../shared/Button'
 import { Card } from '../shared/Card'
+
+type Theme = 'light' | 'dark' | 'system'
+
+const themeOptions: { value: Theme; icon: typeof Sun; label: string }[] = [
+  { value: 'light', icon: Sun, label: 'Hell' },
+  { value: 'dark', icon: Moon, label: 'Dunkel' },
+  { value: 'system', icon: Monitor, label: 'System' },
+]
 
 export function DataManagement() {
   const { settings, update } = useSettingsStore()
@@ -11,7 +19,7 @@ export function DataManagement() {
   const [importError, setImportError] = useState('')
 
   async function handleExport() {
-    const data = await repository.exportAll()
+    const data = await getRepository().exportAll()
     const blob = new Blob([data], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -30,7 +38,7 @@ export function DataManagement() {
       if (!file) return
       try {
         const text = await file.text()
-        await repository.importAll(text)
+        await getRepository().importAll(text)
         window.location.reload()
       } catch {
         setImportError('Ungültige Datei. Bitte eine gültige Export-Datei wählen.')
@@ -40,17 +48,9 @@ export function DataManagement() {
   }
 
   async function handleClear() {
-    await repository.clearAll()
+    await getRepository().clearAll()
     window.location.reload()
   }
-
-  const themeOptions: { value: UserSettings['theme']; icon: typeof Sun; label: string }[] = [
-    { value: 'light', icon: Sun, label: 'Hell' },
-    { value: 'dark', icon: Moon, label: 'Dunkel' },
-    { value: 'system', icon: Monitor, label: 'System' },
-  ]
-
-  type UserSettings = { theme: 'light' | 'dark' | 'system' }
 
   return (
     <div className="space-y-4">
@@ -92,12 +92,21 @@ export function DataManagement() {
                   ⚠️ Alle Daten werden unwiderruflich gelöscht!
                 </p>
                 <div className="flex gap-2">
-                  <Button variant="secondary" fullWidth onClick={() => setConfirmDelete(false)}>Abbrechen</Button>
-                  <Button variant="danger" fullWidth onClick={handleClear}>Löschen bestätigen</Button>
+                  <Button variant="secondary" fullWidth onClick={() => setConfirmDelete(false)}>
+                    Abbrechen
+                  </Button>
+                  <Button variant="danger" fullWidth onClick={handleClear}>
+                    Löschen bestätigen
+                  </Button>
                 </div>
               </div>
             ) : (
-              <Button variant="ghost" fullWidth onClick={() => setConfirmDelete(true)} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30">
+              <Button
+                variant="ghost"
+                fullWidth
+                onClick={() => setConfirmDelete(true)}
+                className="text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+              >
                 <Trash2 size={16} /> Alle Daten löschen
               </Button>
             )}
