@@ -63,8 +63,10 @@ export const PACE_ACTIVITIES = ['run', 'walk', 'hike']
 
 export const DRINK_TYPES = [
   { id: 'water', label: 'Wasser', icon: '💧' },
-  { id: 'tea', label: 'Tee', icon: '🍵' },
   { id: 'coffee', label: 'Kaffee', icon: '☕' },
+  { id: 'tea', label: 'Tee', icon: '🍵' },
   { id: 'juice', label: 'Saft', icon: '🥤' },
+  { id: 'beer', label: 'Bier', icon: '🍺' },
+  { id: 'wine', label: 'Wein', icon: '🍷' },
   { id: 'other', label: 'Sonstiges', icon: '🫗' },
 ]

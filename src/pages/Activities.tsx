@@ -8,6 +8,7 @@ import { HydrationTracker } from '../components/hydration/HydrationTracker'
 import { StepInput } from '../components/steps/StepInput'
 import { Modal } from '../components/shared/Modal'
 import { Button } from '../components/shared/Button'
+import { Input } from '../components/shared/Input'
 import { useActivitiesStore } from '../stores/activitiesStore'
 import { useHydrationStore } from '../stores/hydrationStore'
 import { useStepsStore } from '../stores/stepsStore'
@@ -24,6 +25,7 @@ export function Activities() {
   const [showActivityModal, setShowActivityModal] = useState(false)
   const [showStepModal, setShowStepModal] = useState(false)
   const [editActivity, setEditActivity] = useState<Activity | null>(null)
+  const [manualSteps, setManualSteps] = useState('')
 
   const { entries: activities, loadByDate: loadActivities, addActivity, updateActivity, deleteActivity } = useActivitiesStore()
   const { entries: hydrationEntries, loadByDate: loadHydration, getTotalForDate: getHydTotal, addHydration, deleteEntry: deleteHydration } = useHydrationStore()
@@ -116,10 +118,38 @@ export function Activities() {
                 <Button size="sm" onClick={() => addSteps(1000)} className="bg-white/20 hover:bg-white/30 text-white border-0">
                   +1.000
                 </Button>
-                <Button size="sm" onClick={() => setShowStepModal(true)} className="bg-white/20 hover:bg-white/30 text-white border-0">
-                  <Footprints size={14} /> Eigene Zahl
+                <Button size="sm" onClick={() => addSteps(5000)} className="bg-white/20 hover:bg-white/30 text-white border-0">
+                  +5.000
                 </Button>
               </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-4 space-y-3">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Schritte manuell eingeben</p>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min="1"
+                  placeholder="z.B. 3.000"
+                  value={manualSteps}
+                  onChange={(e) => setManualSteps(e.target.value)}
+                  className="flex-1"
+                />
+                <Button
+                  onClick={() => {
+                    const n = parseInt(manualSteps)
+                    if (n > 0) { addSteps(n, 'manual'); setManualSteps('') }
+                  }}
+                >
+                  +
+                </Button>
+              </div>
+              <button
+                onClick={() => setShowStepModal(true)}
+                className="flex items-center gap-1.5 text-xs text-primary-500 dark:text-primary-400"
+              >
+                <Footprints size={13} /> Mit Datum & Uhrzeit hinzufügen
+              </button>
             </div>
 
             <div className="space-y-2">

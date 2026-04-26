@@ -28,7 +28,7 @@ export interface HydrationEntry {
   id: string
   date: string
   amountMl: number
-  drinkType: 'water' | 'tea' | 'coffee' | 'juice' | 'other'
+  drinkType: 'water' | 'tea' | 'coffee' | 'juice' | 'beer' | 'wine' | 'other'
   timestamp: string
 }
 
