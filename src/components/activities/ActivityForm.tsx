@@ -9,7 +9,7 @@ import { useSettingsStore } from '../../stores/settingsStore'
 
 interface ActivityFormProps {
   initial?: Activity
-  onSave: (activity: Activity) => void
+  onSave: (activity: Activity) => Promise<void>
   onCancel: () => void
 }
 
@@ -39,6 +39,8 @@ export function ActivityForm({ initial, onSave, onCancel }: ActivityFormProps) {
   const [intensity, setIntensity] = useState<Activity['intensity']>(initial?.intensity ?? 'medium')
   const [notes, setNotes] = useState(initial?.notes ?? '')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const selected = allActivities.find((a) => a.id === activityType)
   const isBikeOutdoor = activityType === 'bike_outdoor'
@@ -85,7 +87,7 @@ export function ActivityForm({ initial, onSave, onCancel }: ActivityFormProps) {
     return Object.keys(e).length === 0
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!validate()) return
     const activity: Activity = {
       id: initial?.id ?? generateId(),
@@ -104,7 +106,14 @@ export function ActivityForm({ initial, onSave, onCancel }: ActivityFormProps) {
       notes: notes || undefined,
       timestamp: initial?.timestamp ?? new Date().toISOString(),
     }
-    onSave(activity)
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await onSave(activity)
+    } catch {
+      setSaveError('Speichern fehlgeschlagen. Bitte erneut versuchen.')
+      setSaving(false)
+    }
   }
 
   const activityOptions = allActivities.map((a) => ({ value: a.id, label: `${a.icon} ${a.label}` }))
@@ -261,9 +270,14 @@ export function ActivityForm({ initial, onSave, onCancel }: ActivityFormProps) {
         placeholder="Optional..."
       />
 
+      {saveError && (
+        <p className="text-sm text-red-500 text-center">{saveError}</p>
+      )}
       <div className="flex gap-3 pt-2">
-        <Button variant="secondary" fullWidth onClick={onCancel}>Abbrechen</Button>
-        <Button fullWidth onClick={handleSubmit}>{initial ? 'Speichern' : 'Hinzufügen'}</Button>
+        <Button variant="secondary" fullWidth onClick={onCancel} disabled={saving}>Abbrechen</Button>
+        <Button fullWidth onClick={handleSubmit} disabled={saving}>
+          {saving ? 'Wird gespeichert…' : initial ? 'Speichern' : 'Hinzufügen'}
+        </Button>
       </div>
     </div>
   )
