@@ -1,6 +1,6 @@
 import { repository } from '../repositories/LocalStorageRepository'
 import type { StepEntry, Activity, HydrationEntry, FoodProduct, MealEntry, WeightEntry, BloodPressureEntry } from '../types'
-import { generateId, toISODate } from './calculations'
+import { generateId } from './calculations'
 import { computeForAmount, sumNutrition } from '../lib/nutritionMath'
 import { classifyBP } from '../lib/bloodPressure'
 

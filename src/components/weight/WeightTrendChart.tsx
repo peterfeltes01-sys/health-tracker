@@ -86,7 +86,7 @@ export function WeightTrendChart({ entries }: Props) {
           />
           <Tooltip
             contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
-            formatter={(v: number) => [`${v} kg`]}
+            formatter={(v) => [`${v} kg`]}
           />
           <Line
             type="monotone"

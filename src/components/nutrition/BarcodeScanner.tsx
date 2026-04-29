@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { BrowserMultiFormatReader, NotFoundException } from '@zxing/browser'
+import { BrowserMultiFormatReader } from '@zxing/browser'
+import type { IScannerControls } from '@zxing/browser'
 import { X } from 'lucide-react'
 
 interface Props {
@@ -9,13 +10,12 @@ interface Props {
 
 export function BarcodeScanner({ onDetected, onClose }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
-  const readerRef = useRef<BrowserMultiFormatReader | null>(null)
+  const controlsRef = useRef<IScannerControls | null>(null)
   const detectedRef = useRef(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const reader = new BrowserMultiFormatReader()
-    readerRef.current = reader
 
     if (!videoRef.current) return
 
@@ -24,16 +24,20 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
         if (detectedRef.current) return
         if (result) {
           detectedRef.current = true
+          controlsRef.current?.stop()
           onDetected(result.getText())
         }
-        if (err && !(err instanceof NotFoundException)) {
+        if (err && err.name !== 'NotFoundException') {
           setError('Kamerazugriff nicht möglich')
         }
+      })
+      .then((controls) => {
+        controlsRef.current = controls
       })
       .catch(() => setError('Kamerazugriff verweigert. Bitte Berechtigung erteilen.'))
 
     return () => {
-      reader.reset()
+      controlsRef.current?.stop()
     }
   }, [onDetected])
 

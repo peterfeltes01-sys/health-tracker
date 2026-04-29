@@ -87,7 +87,7 @@ export function BPTrendChart({ entries }: Props) {
           />
           <Tooltip
             contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
-            formatter={(v: number, name: string) => [
+            formatter={(v, name) => [
               `${v} mmHg`,
               name === 'sys' ? 'Systolisch' : name === 'dia' ? 'Diastolisch' : 'Puls'
             ]}
