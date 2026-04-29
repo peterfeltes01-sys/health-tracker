@@ -8,6 +8,11 @@ import { Activities } from './pages/Activities'
 import { Stats } from './pages/Stats'
 import { History } from './pages/History'
 import { Settings } from './pages/Settings'
+import { NutritionPage } from './pages/NutritionPage'
+import { MealEditPage } from './pages/MealEditPage'
+import { CustomProductsPage } from './pages/CustomProductsPage'
+import { ValuesPage } from './pages/ValuesPage'
+import { MorePage } from './pages/MorePage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
@@ -15,6 +20,9 @@ import { useSettingsStore } from './stores/settingsStore'
 import { useStepsStore } from './stores/stepsStore'
 import { useActivitiesStore } from './stores/activitiesStore'
 import { useHydrationStore } from './stores/hydrationStore'
+import { useNutritionStore } from './stores/nutritionStore'
+import { useWeightStore } from './stores/weightStore'
+import { useBloodPressureStore } from './stores/bloodPressureStore'
 import { useAuth } from './hooks/useAuth'
 import { setRepository } from './lib/repositoryRegistry'
 import { FirestoreRepository } from './repositories/FirestoreRepository'
@@ -65,6 +73,9 @@ function AppCore() {
       useStepsStore.getState().reset()
       useActivitiesStore.getState().reset()
       useHydrationStore.getState().reset()
+      useNutritionStore.getState().reset()
+      useWeightStore.getState().reset()
+      useBloodPressureStore.getState().reset()
       resetSettings()
       setRepository(new LocalStorageRepository())
     }
@@ -78,19 +89,21 @@ function AppCore() {
     <>
       <ThemeController />
       <Routes>
-        {/* Public auth routes — redirect to dashboard if already logged in */}
         <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
         <Route path="/register" element={user ? <Navigate to="/" replace /> : <RegisterPage />} />
         <Route path="/forgot-password" element={user ? <Navigate to="/" replace /> : <ForgotPasswordPage />} />
 
-        {/* Protected app routes */}
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/activities" element={<ProtectedRoute><Activities /></ProtectedRoute>} />
         <Route path="/stats" element={<ProtectedRoute><Stats /></ProtectedRoute>} />
         <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+        <Route path="/nutrition" element={<ProtectedRoute><NutritionPage /></ProtectedRoute>} />
+        <Route path="/nutrition/meal/:id?" element={<ProtectedRoute><MealEditPage /></ProtectedRoute>} />
+        <Route path="/nutrition/products" element={<ProtectedRoute><CustomProductsPage /></ProtectedRoute>} />
+        <Route path="/values" element={<ProtectedRoute><ValuesPage /></ProtectedRoute>} />
+        <Route path="/more" element={<ProtectedRoute><MorePage /></ProtectedRoute>} />
 
-        {/* Fallback */}
         <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
       </Routes>
 

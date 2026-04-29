@@ -21,6 +21,13 @@ export const INTENSITY_FACTORS = {
   high: 1.3,
 }
 
+export const DEFAULT_NUTRITION_GOALS = {
+  dailyKcal: 2000,
+  carbsPercent: 50,
+  fatPercent: 30,
+  proteinPercent: 20,
+}
+
 export const DEFAULT_SETTINGS = {
   dailyStepGoal: 10000,
   dailyHydrationGoalMl: 2500,
@@ -29,6 +36,7 @@ export const DEFAULT_SETTINGS = {
   theme: 'system' as const,
   weeklyCalorieGoal: 2000,
   weeklyActivityGoal: 5,
+  nutritionGoals: DEFAULT_NUTRITION_GOALS,
 }
 
 export const ACTIVITY_COLORS: Record<string, string> = {

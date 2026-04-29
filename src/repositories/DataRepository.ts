@@ -1,4 +1,15 @@
-import type { StepEntry, Activity, HydrationEntry, UserSettings } from '../types'
+import type {
+  StepEntry,
+  Activity,
+  HydrationEntry,
+  UserSettings,
+  MealEntry,
+  MealType,
+  MealTemplate,
+  FoodProduct,
+  WeightEntry,
+  BloodPressureEntry,
+} from '../types'
 
 export interface DataRepository {
   getStepsByDate(date: string): Promise<StepEntry[]>
@@ -19,6 +30,40 @@ export interface DataRepository {
 
   getSettings(): Promise<UserSettings>
   updateSettings(settings: Partial<UserSettings>): Promise<void>
+
+  // Nutrition
+  getMealsByDate(date: string): Promise<MealEntry[]>
+  getMealsByDateRange(from: string, to: string): Promise<MealEntry[]>
+  addMeal(meal: Omit<MealEntry, 'id'>): Promise<string>
+  updateMeal(meal: MealEntry): Promise<void>
+  deleteMeal(id: string): Promise<void>
+
+  // Custom Products
+  getCustomProducts(): Promise<FoodProduct[]>
+  addCustomProduct(product: Omit<FoodProduct, 'id' | 'source'>): Promise<string>
+  updateCustomProduct(product: FoodProduct): Promise<void>
+  deleteCustomProduct(id: string): Promise<void>
+
+  // Meal Templates
+  getMealTemplates(mealType?: MealType): Promise<MealTemplate[]>
+  saveMealTemplate(template: Omit<MealTemplate, 'id'>): Promise<string>
+  incrementTemplateUse(id: string): Promise<void>
+  deleteMealTemplate(id: string): Promise<void>
+
+  // Recent Products (OFF cache)
+  getRecentProducts(): Promise<FoodProduct[]>
+  upsertRecentProduct(product: FoodProduct): Promise<void>
+
+  // Weight
+  getWeightEntries(from?: string, to?: string): Promise<WeightEntry[]>
+  upsertWeightEntry(entry: Omit<WeightEntry, 'id'>): Promise<void>
+  deleteWeightEntry(id: string): Promise<void>
+
+  // Blood Pressure
+  getBloodPressureEntries(from?: string, to?: string): Promise<BloodPressureEntry[]>
+  addBloodPressureEntry(entry: Omit<BloodPressureEntry, 'id' | 'category'>): Promise<string>
+  updateBloodPressureEntry(entry: BloodPressureEntry): Promise<void>
+  deleteBloodPressureEntry(id: string): Promise<void>
 
   exportAll(): Promise<string>
   importAll(data: string): Promise<void>

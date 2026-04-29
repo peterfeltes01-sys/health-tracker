@@ -1,13 +1,13 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Dumbbell, BarChart2, History, Settings } from 'lucide-react'
+import { LayoutDashboard, Dumbbell, Utensils, Activity, MoreHorizontal } from 'lucide-react'
 import { clsx } from 'clsx'
 
 const tabs = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/activities', icon: Dumbbell, label: 'Aktivitäten' },
-  { to: '/stats', icon: BarChart2, label: 'Statistiken' },
-  { to: '/history', icon: History, label: 'Verlauf' },
-  { to: '/settings', icon: Settings, label: 'Einstellungen' },
+  { to: '/nutrition', icon: Utensils, label: 'Ernährung' },
+  { to: '/values', icon: Activity, label: 'Werte' },
+  { to: '/more', icon: MoreHorizontal, label: 'Mehr' },
 ]
 
 export function BottomNav() {
