@@ -153,7 +153,7 @@ export function MealEditor({ initial, date, onSave, onCancel }: Props) {
 
   return (
     <div className="flex flex-col min-h-full">
-      <div className="flex-1 space-y-4 pb-32">
+      <div className="flex-1 space-y-4 pb-48">
         <div className="grid grid-cols-2 gap-3">
           <Select
             label="Mahlzeit"
@@ -232,8 +232,8 @@ export function MealEditor({ initial, date, onSave, onCancel }: Props) {
         </label>
       </div>
 
-      {/* Sticky footer with totals */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-gray-950/95 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800 px-4 py-3 safe-bottom">
+      {/* Sticky footer with totals — sits above BottomNav (bottom-14 = 56px) */}
+      <div className="fixed bottom-14 left-0 right-0 bg-white/95 dark:bg-gray-950/95 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800 px-4 py-3 z-30">
         <div className="max-w-lg mx-auto space-y-2">
           {components.length > 0 && (
             <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 px-1">
