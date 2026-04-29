@@ -20,21 +20,26 @@ export function BarcodeScanner({ onDetected, onClose }: Props) {
     if (!videoRef.current) return
 
     reader
-      .decodeFromVideoDevice(undefined, videoRef.current, (result, err) => {
+      .decodeFromVideoDevice(undefined, videoRef.current, (result) => {
         if (detectedRef.current) return
         if (result) {
           detectedRef.current = true
           controlsRef.current?.stop()
           onDetected(result.getText())
         }
-        if (err && err.name !== 'NotFoundException') {
-          setError('Kamerazugriff nicht möglich')
-        }
+        // Callback-Fehler ignorieren — sie sind normale "kein Barcode gefunden"-Events
       })
       .then((controls) => {
         controlsRef.current = controls
       })
-      .catch(() => setError('Kamerazugriff verweigert. Bitte Berechtigung erteilen.'))
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : ''
+        if (msg.includes('Permission') || msg.includes('permission') || msg.includes('NotAllowed')) {
+          setError('Kamerazugriff verweigert. Bitte in den Einstellungen erlauben.')
+        } else {
+          setError('Kamera konnte nicht gestartet werden.')
+        }
+      })
 
     return () => {
       controlsRef.current?.stop()

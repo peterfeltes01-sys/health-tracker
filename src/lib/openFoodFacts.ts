@@ -1,7 +1,6 @@
 import type { FoodProduct, NutritionFacts } from '../types'
 
 const BASE = 'https://world.openfoodfacts.org'
-const UA = 'HealthTracker/1.0 (Personal Use)'
 
 const memoryCache = new Map<string, { data: FoodProduct[]; expires: number }>()
 
@@ -49,10 +48,7 @@ export async function searchProducts(
     `&search_simple=1&action=process&json=1&lang=de&page_size=20` +
     `&fields=code,product_name,product_name_de,brands,image_small_url,nutriments,serving_quantity`
 
-  const res = await fetch(url, {
-    signal,
-    headers: { 'User-Agent': UA },
-  })
+  const res = await fetch(url, { signal })
   if (!res.ok) throw new Error('OFF API Error')
 
   const data = await res.json()
@@ -73,10 +69,7 @@ export async function getProductByBarcode(
     `${BASE}/api/v2/product/${barcode}.json` +
     `?fields=code,product_name,product_name_de,brands,image_small_url,nutriments,serving_quantity`
 
-  const res = await fetch(url, {
-    signal,
-    headers: { 'User-Agent': UA },
-  })
+  const res = await fetch(url, { signal })
   if (!res.ok) return null
 
   const data = await res.json()
