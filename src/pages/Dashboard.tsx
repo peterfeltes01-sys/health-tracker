@@ -91,57 +91,58 @@ export function Dashboard() {
             activities={todayActivities}
           />
 
-          {/* Quick health widgets */}
-          <div className="grid grid-cols-2 gap-3">
-            {/* kcal widget */}
-            <Card
-              padding="sm"
-              onClick={() => navigate('/nutrition')}
-              className="flex flex-col gap-2"
-            >
-              <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kalorien heute</p>
+          {/* Health widgets */}
+          <div className="grid grid-cols-3 gap-3">
+            {/* Kalorien */}
+            <Card padding="sm" onClick={() => navigate('/nutrition')} className="flex flex-col gap-1.5">
+              <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kalorien</p>
               <div>
-                <span className="text-xl font-bold text-gray-900 dark:text-white">{todayKcal}</span>
-                <span className="text-xs text-gray-400 ml-1">/ {kcalGoal} kcal</span>
+                <span className="text-lg font-bold text-gray-900 dark:text-white">{todayKcal}</span>
+                <span className="text-[10px] text-gray-400 ml-0.5">kcal</span>
               </div>
               <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-green-500 transition-all"
-                  style={{ width: `${kcalPct}%` }}
-                />
+                <div className="h-full rounded-full bg-green-500 transition-all" style={{ width: `${kcalPct}%` }} />
               </div>
-              <p className="text-xs text-gray-400">{kcalPct}% des Tagesziels</p>
+              <p className="text-[10px] text-gray-400">{kcalPct}% Ziel</p>
             </Card>
 
-            {/* Weight & BP widget */}
-            <div className="space-y-3">
-              {latestWeight && (
-                <Card padding="sm" onClick={() => navigate('/values')} className="flex flex-col gap-1">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Gewicht</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-xl font-bold text-gray-900 dark:text-white">{latestWeight.weightKg.toFixed(1)}</span>
-                    <span className="text-xs text-gray-400">kg</span>
-                    {weightDiff !== null && (
-                      <span className={`text-xs font-semibold ml-1 ${weightDiff < 0 ? 'text-green-500' : weightDiff > 0 ? 'text-red-500' : 'text-gray-400'}`}>
-                        {weightDiff > 0 ? '+' : ''}{weightDiff.toFixed(1)}
-                      </span>
-                    )}
+            {/* Gewicht */}
+            <Card padding="sm" onClick={() => navigate('/values')} className="flex flex-col gap-1">
+              <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gewicht</p>
+              {latestWeight ? (
+                <>
+                  <div className="flex items-baseline gap-0.5">
+                    <span className="text-lg font-bold text-gray-900 dark:text-white">{latestWeight.weightKg.toFixed(1)}</span>
+                    <span className="text-[10px] text-gray-400">kg</span>
                   </div>
-                </Card>
+                  {weightDiff !== null && (
+                    <span className={`text-[11px] font-semibold ${weightDiff < 0 ? 'text-green-500' : weightDiff > 0 ? 'text-red-500' : 'text-gray-400'}`}>
+                      {weightDiff > 0 ? '+' : ''}{weightDiff.toFixed(1)} kg
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-sm text-gray-400">—</span>
               )}
-              {latestBP && bpMeta && (
-                <Card padding="sm" onClick={() => navigate('/values')} className="flex flex-col gap-1">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold uppercase tracking-wider">Blutdruck</p>
-                  <div className="flex items-center gap-2">
+            </Card>
+
+            {/* Blutdruck */}
+            <Card padding="sm" onClick={() => navigate('/values')} className="flex flex-col gap-1">
+              <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Blutdruck</p>
+              {latestBP && bpMeta ? (
+                <>
+                  <div className="flex items-center gap-1.5">
                     <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: bpMeta.color }} />
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">
+                    <span className="text-base font-bold text-gray-900 dark:text-white">
                       {latestBP.systolic}/{latestBP.diastolic}
                     </span>
                   </div>
-                  <p className="text-xs font-medium" style={{ color: bpMeta.color }}>{bpMeta.label}</p>
-                </Card>
+                  <p className="text-[10px] font-medium" style={{ color: bpMeta.color }}>{bpMeta.label}</p>
+                </>
+              ) : (
+                <span className="text-sm text-gray-400">—</span>
               )}
-            </div>
+            </Card>
           </div>
 
           <QuickActions onAddActivity={() => setShowActivityModal(true)} />
