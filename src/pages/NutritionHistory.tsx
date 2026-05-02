@@ -123,7 +123,7 @@ export function NutritionHistory() {
                 />
                 <Tooltip
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
-                  formatter={(v: number) => [`${v} kcal`, 'Kalorien']}
+                  formatter={(v) => [`${v} kcal`, 'Kalorien']}
                 />
                 <ReferenceLine y={dailyKcalGoal} stroke="#10b981" strokeDasharray="4 4" />
                 <Bar dataKey="kcal" radius={[4, 4, 0, 0]}>

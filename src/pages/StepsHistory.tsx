@@ -138,7 +138,7 @@ export function StepsHistory() {
                 />
                 <Tooltip
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e5e7eb' }}
-                  formatter={(v: number) => [formatSteps(v), 'Schritte']}
+                  formatter={(v) => [formatSteps(Number(v)), 'Schritte']}
                   labelFormatter={(l) => `${l}`}
                 />
                 <ReferenceLine y={stepGoal} stroke="#10b981" strokeDasharray="4 4" />
