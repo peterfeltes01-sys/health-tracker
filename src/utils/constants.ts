@@ -37,6 +37,9 @@ export const DEFAULT_SETTINGS = {
   weeklyCalorieGoal: 2000,
   weeklyActivityGoal: 5,
   nutritionGoals: DEFAULT_NUTRITION_GOALS,
+  heightCm: 175,
+  waistCm: 0,
+  hipCm: 0,
 }
 
 export const ACTIVITY_COLORS: Record<string, string> = {

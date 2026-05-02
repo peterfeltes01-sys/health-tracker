@@ -1,5 +1,5 @@
 import { ProgressRing } from './ProgressRing'
-import { formatSteps, formatHydration, formatCalories, formatDuration } from '../../utils/formatters'
+import { formatSteps, formatCalories, formatDuration } from '../../utils/formatters'
 import type { Activity } from '../../types'
 
 interface DailyOverviewProps {
@@ -67,20 +67,6 @@ export function DailyOverview({ steps, stepGoal, hydration, hydrationGoal, activ
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-4 text-center">
-          <div className="text-2xl font-bold text-gray-900 dark:text-white">{activities.length}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Aktivitäten</div>
-        </div>
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-4 text-center">
-          <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">{formatHydration(hydration)}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Getrunken</div>
-        </div>
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-4 text-center">
-          <div className="text-2xl font-bold text-accent-500">{totalCals > 0 ? Math.round(totalCals) : '—'}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">kcal</div>
-        </div>
-      </div>
     </div>
   )
 }

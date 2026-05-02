@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom'
-import { BarChart2, History, Settings, ChevronRight, Package, Footprints, UtensilsCrossed } from 'lucide-react'
+import { BarChart2, History, Settings, ChevronRight, Package, Footprints, UtensilsCrossed, Wind } from 'lucide-react'
 import { Header } from '../components/layout/Header'
 import { PageWrapper } from '../components/layout/PageWrapper'
 
 const ITEMS = [
+  { icon: Wind, label: 'Atemübungen', desc: 'Stress abbauen · Beruhigen · Schlafen', to: '/breathing', color: 'text-teal-500' },
   { icon: Footprints, label: 'Schritte-Verlauf', desc: 'Tägliche Schritte & Zielerreichung', to: '/steps-history', color: 'text-emerald-500' },
   { icon: UtensilsCrossed, label: 'Ernährungs-Verlauf', desc: 'Kalorien & Mahlzeiten der letzten Tage', to: '/nutrition/history', color: 'text-rose-500' },
   { icon: BarChart2, label: 'Statistiken', desc: 'Aktivitäten & Wochenziele', to: '/stats', color: 'text-purple-500' },

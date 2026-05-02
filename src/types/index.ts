@@ -150,6 +150,9 @@ export interface UserSettings {
   weeklyCalorieGoal: number
   weeklyActivityGoal: number
   nutritionGoals: NutritionGoals
+  heightCm?: number
+  waistCm?: number
+  hipCm?: number
 }
 
 export interface DailySummary {

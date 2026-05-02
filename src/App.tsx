@@ -15,6 +15,7 @@ import { MealEditPage } from './pages/MealEditPage'
 import { CustomProductsPage } from './pages/CustomProductsPage'
 import { ValuesPage } from './pages/ValuesPage'
 import { MorePage } from './pages/MorePage'
+import { BreathingPage } from './pages/BreathingPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
@@ -107,6 +108,7 @@ function AppCore() {
         <Route path="/nutrition/products" element={<ProtectedRoute><CustomProductsPage /></ProtectedRoute>} />
         <Route path="/values" element={<ProtectedRoute><ValuesPage /></ProtectedRoute>} />
         <Route path="/more" element={<ProtectedRoute><MorePage /></ProtectedRoute>} />
+        <Route path="/breathing" element={<ProtectedRoute><BreathingPage /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
       </Routes>
