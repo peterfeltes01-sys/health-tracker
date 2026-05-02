@@ -1,6 +1,5 @@
 import { Edit2, Trash2 } from 'lucide-react'
 import type { MealEntry } from '../../types'
-import { MEAL_TYPE_LABELS, MEAL_TYPE_ICONS } from '../../lib/nutritionMath'
 
 interface Props {
   meal: MealEntry
@@ -13,19 +12,12 @@ export function MealCard({ meal, onEdit, onDelete }: Props) {
 
   return (
     <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
-      {/* Meal header */}
-      <div className="flex items-center gap-3 p-4">
-        <span className="text-2xl">{MEAL_TYPE_ICONS[meal.mealType]}</span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold text-gray-900 dark:text-white">
-              {MEAL_TYPE_LABELS[meal.mealType]}
-            </p>
-            {meal.time && (
-              <span className="text-xs text-gray-400">{meal.time}</span>
-            )}
-          </div>
-          <div className="flex gap-3 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+      <div className="flex items-center gap-3 p-3 pb-2">
+        <div className="flex-1 min-w-0 flex items-center gap-3 flex-wrap">
+          {meal.time && (
+            <span className="text-xs text-gray-400">{meal.time}</span>
+          )}
+          <div className="flex gap-3 text-xs text-gray-500 dark:text-gray-400">
             <span className="font-semibold text-gray-800 dark:text-gray-200">{totals.kcal} kcal</span>
             <span>K: {totals.carbs}g</span>
             <span>F: {totals.fat}g</span>
@@ -42,7 +34,6 @@ export function MealCard({ meal, onEdit, onDelete }: Props) {
         </div>
       </div>
 
-      {/* Food items – always visible */}
       {meal.components.length > 0 && (
         <div className="border-t border-gray-100 dark:border-gray-800 px-4 pb-3 pt-2 space-y-2.5">
           {meal.components.map((c, i) => (

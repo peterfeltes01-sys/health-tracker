@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Plus, Save } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { Plus, Save, CopyIcon } from 'lucide-react'
 import type { FoodProduct, MealComponent, MealEntry, MealType, NutritionFacts } from '../../types'
 import { computeForAmount, sumNutrition, MEAL_TYPE_LABELS, MEAL_TYPE_ICONS } from '../../lib/nutritionMath'
 import { ProductSearch } from './ProductSearch'
@@ -9,6 +9,8 @@ import { Button } from '../shared/Button'
 import { Select } from '../shared/Input'
 import { useNutritionStore } from '../../stores/nutritionStore'
 import { useMealSuggestions } from '../../hooks/useMealSuggestions'
+import { getRepository } from '../../lib/repositoryRegistry'
+import { toISODate } from '../../utils/calculations'
 
 const EMPTY_NUTRITION: NutritionFacts = { kcal: 0, carbs: 0, fat: 0, satFat: 0, protein: 0 }
 
@@ -92,9 +94,42 @@ export function MealEditor({ initial, date, onSave, onCancel }: Props) {
   const [showSearch, setShowSearch] = useState(!initial)
   const [saving, setSaving] = useState(false)
   const [saveAsTemplate, setSaveAsTemplate] = useState(false)
+  const [yesterdayMeals, setYesterdayMeals] = useState<MealEntry[]>([])
 
   const { meals, saveTemplate, cacheRecentProduct } = useNutritionStore()
   const suggestions = useMealSuggestions(meals, mealType)
+
+  const yesterdayDate = useMemo(() => {
+    const d = new Date(date)
+    d.setDate(d.getDate() - 1)
+    return toISODate(d)
+  }, [date])
+
+  useEffect(() => {
+    let cancelled = false
+    getRepository()
+      .getMealsByDate(yesterdayDate)
+      .then((m) => { if (!cancelled) setYesterdayMeals(m) })
+      .catch(() => { /* ignore */ })
+    return () => { cancelled = true }
+  }, [yesterdayDate])
+
+  const yesterdayMatch = yesterdayMeals.find((m) => m.mealType === mealType)
+
+  function handleCopyFromYesterday() {
+    if (!yesterdayMatch) return
+    const cloned: MealComponent[] = yesterdayMatch.components.map((c) => ({
+      productId: c.productId,
+      productSource: c.productSource,
+      nameSnapshot: c.nameSnapshot,
+      brandSnapshot: c.brandSnapshot,
+      per100gSnapshot: c.per100gSnapshot,
+      amountGrams: c.amountGrams,
+      computed: computeForAmount(c.per100gSnapshot, c.amountGrams),
+    }))
+    setComponents(cloned)
+    setShowSearch(false)
+  }
 
   const totals = components.length > 0
     ? sumNutrition(components.map((c) => c.computed))
@@ -171,6 +206,26 @@ export function MealEditor({ initial, date, onSave, onCancel }: Props) {
             />
           </div>
         </div>
+
+        {yesterdayMatch && components.length === 0 && (
+          <button
+            type="button"
+            onClick={handleCopyFromYesterday}
+            className="w-full flex items-center gap-3 p-3 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-left hover:bg-amber-100 dark:hover:bg-amber-950/50 transition-colors"
+          >
+            <div className="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center flex-shrink-0">
+              <CopyIcon size={16} className="text-amber-600 dark:text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                {MEAL_TYPE_LABELS[mealType]} von gestern kopieren
+              </p>
+              <p className="text-xs text-amber-600/80 dark:text-amber-400/80 truncate">
+                {yesterdayMatch.components.length} Komponenten · {yesterdayMatch.totals.kcal} kcal · Mengen anpassbar
+              </p>
+            </div>
+          </button>
+        )}
 
         {suggestions.length > 0 && components.length === 0 && (
           <MealSuggestions suggestions={suggestions} onApply={handleApplySuggestion} />

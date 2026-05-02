@@ -94,15 +94,20 @@ export function NutritionDashboard({ meals, onEditMeal, onDeleteMeal, onAddMeal 
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
-          {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => {
+        <div className="space-y-4">
+          {(['breakfast', 'lunch', 'dinner', 'snack'] as const).map((type) => {
             const typeMeals = sortedMeals.filter((m) => m.mealType === type)
             if (typeMeals.length === 0) return null
+            const typeKcal = typeMeals.reduce((s, m) => s + m.totals.kcal, 0)
             return (
               <div key={type} className="space-y-2">
-                <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {MEAL_TYPE_ICONS[type]} {MEAL_TYPE_LABELS[type]}
-                </p>
+                <div className="flex items-center justify-between px-1">
+                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                    <span className="text-base">{MEAL_TYPE_ICONS[type]}</span>
+                    <span>{MEAL_TYPE_LABELS[type]}</span>
+                  </p>
+                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400">{typeKcal} kcal</span>
+                </div>
                 {typeMeals.map((meal) => (
                   <MealCard
                     key={meal.id}

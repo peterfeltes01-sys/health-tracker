@@ -4,6 +4,7 @@ import { Header } from '../components/layout/Header'
 import { PageWrapper } from '../components/layout/PageWrapper'
 import { DailyOverview } from '../components/dashboard/DailyOverview'
 import { QuickActions } from '../components/dashboard/QuickActions'
+import { StepsSyncTile } from '../components/steps/StepsSyncTile'
 import { ActivityCard } from '../components/activities/ActivityCard'
 import { ActivityForm } from '../components/activities/ActivityForm'
 import { Modal } from '../components/shared/Modal'
@@ -26,7 +27,7 @@ export function Dashboard() {
   const [editActivity, setEditActivity] = useState<Activity | null>(null)
   const navigate = useNavigate()
 
-  const { loadByDate: loadSteps, getTotalForDate } = useStepsStore()
+  const { loadByRange: loadStepsRange, getTotalForDate, seedIfEmpty: seedSteps } = useStepsStore()
   const { entries: activities, loadByDate: loadActivities, addActivity, updateActivity, deleteActivity } = useActivitiesStore()
   const { loadByDate: loadHydration, getTotalForDate: getHydTotal } = useHydrationStore()
   const { settings } = useSettingsStore()
@@ -35,13 +36,22 @@ export function Dashboard() {
   const { entries: bpEntries, load: loadBP } = useBloodPressureStore()
 
   useEffect(() => {
-    loadSteps(today)
+    let cancelled = false
+    async function init() {
+      // Seed last 7 days only if there are no step entries yet (first run).
+      await seedSteps(today, [7842, 9120, 6450, 11203, 8755, 7398, 8210])
+      if (cancelled) return
+      const stepsFrom = toISODate(subDays(new Date(), 30))
+      await loadStepsRange(stepsFrom, today)
+    }
+    init()
     loadActivities(today)
     loadHydration(today)
     loadMealsByDate(today)
     const from = toISODate(subDays(new Date(), 30))
     loadWeight(from)
     loadBP(from)
+    return () => { cancelled = true }
   }, [today])
 
   const todaySteps = getTotalForDate(today)
@@ -90,6 +100,8 @@ export function Dashboard() {
             hydrationGoal={settings.dailyHydrationGoalMl}
             activities={todayActivities}
           />
+
+          <StepsSyncTile date={today} todaySteps={todaySteps} />
 
           {/* Health widgets */}
           <div className="grid grid-cols-3 gap-3">

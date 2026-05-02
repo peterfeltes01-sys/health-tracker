@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Plus, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Plus, ChevronLeft, ChevronRight, History } from 'lucide-react'
 import { Header } from '../components/layout/Header'
 import { PageWrapper } from '../components/layout/PageWrapper'
 import { NutritionDashboard } from '../components/nutrition/NutritionDashboard'
@@ -10,7 +10,9 @@ import type { MealEntry } from '../types'
 
 export function NutritionPage() {
   const today = toISODate(new Date())
-  const [date, setDate] = useState(today)
+  const [searchParams] = useSearchParams()
+  const initialDate = searchParams.get('date') ?? today
+  const [date, setDate] = useState(initialDate)
   const { meals, loadMealsByDate, deleteMeal, loadCustomProducts, loadRecentProducts } = useNutritionStore()
   const navigate = useNavigate()
 
@@ -50,12 +52,22 @@ export function NutritionPage() {
             <button onClick={() => changeDate(-1)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
               <ChevronLeft size={18} className="text-gray-500" />
             </button>
-            <button
-              onClick={() => setDate(today)}
-              className="text-sm font-semibold text-gray-900 dark:text-white"
-            >
-              {formatDate(date)}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setDate(today)}
+                className="text-sm font-semibold text-gray-900 dark:text-white"
+              >
+                {formatDate(date)}
+              </button>
+              <button
+                onClick={() => navigate('/nutrition/history')}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-primary-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                aria-label="Verlauf"
+                title="Verlauf öffnen"
+              >
+                <History size={16} />
+              </button>
+            </div>
             <button
               onClick={() => changeDate(1)}
               disabled={date >= today}

@@ -7,6 +7,8 @@ import { Dashboard } from './pages/Dashboard'
 import { Activities } from './pages/Activities'
 import { Stats } from './pages/Stats'
 import { History } from './pages/History'
+import { StepsHistory } from './pages/StepsHistory'
+import { NutritionHistory } from './pages/NutritionHistory'
 import { Settings } from './pages/Settings'
 import { NutritionPage } from './pages/NutritionPage'
 import { MealEditPage } from './pages/MealEditPage'
@@ -97,6 +99,8 @@ function AppCore() {
         <Route path="/activities" element={<ProtectedRoute><Activities /></ProtectedRoute>} />
         <Route path="/stats" element={<ProtectedRoute><Stats /></ProtectedRoute>} />
         <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+        <Route path="/steps-history" element={<ProtectedRoute><StepsHistory /></ProtectedRoute>} />
+        <Route path="/nutrition/history" element={<ProtectedRoute><NutritionHistory /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         <Route path="/nutrition" element={<ProtectedRoute><NutritionPage /></ProtectedRoute>} />
         <Route path="/nutrition/meal/:id?" element={<ProtectedRoute><MealEditPage /></ProtectedRoute>} />
