@@ -131,6 +131,8 @@ export function Dashboard() {
     if (n > 0) { addHydration(n, drinkType); setCustomMl('') }
   }
 
+  const widgets = settings.dashboardWidgets
+
   // ── Render ────────────────────────────────────────────────────
   return (
     <>
@@ -139,6 +141,7 @@ export function Dashboard() {
         <div className="space-y-4">
 
           {/* ── Schnellzugriff ── */}
+          {widgets.shortcuts && (
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-1">Schnellzugriff</p>
             <div className="grid grid-cols-4 gap-2">
@@ -154,8 +157,10 @@ export function Dashboard() {
               ))}
             </div>
           </div>
+          )}
 
           {/* ── Ernährung ── */}
+          {widgets.nutrition && (
           <Card onClick={() => navigate('/nutrition')} className="cursor-pointer">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">🥗 Ernährung heute</p>
@@ -189,8 +194,10 @@ export function Dashboard() {
               </div>
             </div>
           </Card>
+          )}
 
           {/* ── Gewicht + Blutdruck ── */}
+          {widgets.bodyValues && (
           <div className="grid grid-cols-2 gap-3">
             <Card padding="sm" onClick={() => navigate('/values')} className="flex flex-col gap-1">
               <p className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Gewicht</p>
@@ -222,8 +229,10 @@ export function Dashboard() {
               ) : <span className="text-sm text-gray-400">—</span>}
             </Card>
           </div>
+          )}
 
           {/* ── Flüssigkeit ── */}
+          {widgets.hydration && (
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
             <div className="p-4">
               <div className="flex items-center justify-between mb-2">
@@ -329,8 +338,10 @@ export function Dashboard() {
               </div>
             )}
           </div>
+          )}
 
           {/* ── Schritte ── */}
+          {widgets.steps && (
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -389,8 +400,10 @@ export function Dashboard() {
               <Button onClick={handleAddSteps} className="flex-none mb-0.5">Setzen</Button>
             </div>
           </div>
+          )}
 
           {/* ── Aktivitäten ── */}
+          {widgets.activities && (
           <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-2">
@@ -427,6 +440,7 @@ export function Dashboard() {
               </div>
             )}
           </div>
+          )}
 
         </div>
       </PageWrapper>

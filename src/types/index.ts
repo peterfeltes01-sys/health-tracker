@@ -141,6 +141,15 @@ export interface NutritionGoals {
   proteinPercent: number
 }
 
+export interface DashboardWidgets {
+  shortcuts: boolean
+  nutrition: boolean
+  bodyValues: boolean
+  hydration: boolean
+  steps: boolean
+  activities: boolean
+}
+
 export interface UserSettings {
   dailyStepGoal: number
   dailyHydrationGoalMl: number
@@ -153,6 +162,7 @@ export interface UserSettings {
   heightCm?: number
   waistCm?: number
   hipCm?: number
+  dashboardWidgets: DashboardWidgets
 }
 
 export interface DailySummary {

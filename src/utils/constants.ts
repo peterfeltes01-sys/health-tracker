@@ -28,6 +28,15 @@ export const DEFAULT_NUTRITION_GOALS = {
   proteinPercent: 20,
 }
 
+export const DEFAULT_DASHBOARD_WIDGETS = {
+  shortcuts: true,
+  nutrition: true,
+  bodyValues: true,
+  hydration: true,
+  steps: true,
+  activities: true,
+}
+
 export const DEFAULT_SETTINGS = {
   dailyStepGoal: 10000,
   dailyHydrationGoalMl: 2500,
@@ -40,6 +49,7 @@ export const DEFAULT_SETTINGS = {
   heightCm: 175,
   waistCm: 0,
   hipCm: 0,
+  dashboardWidgets: DEFAULT_DASHBOARD_WIDGETS,
 }
 
 export const ACTIVITY_COLORS: Record<string, string> = {
