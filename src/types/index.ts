@@ -181,6 +181,7 @@ export interface NoteBoard {
   id: string
   title: string
   items: NoteItem[]
+  color?: string
   reminderDate?: string
   reminderTime?: string
   createdAt: string

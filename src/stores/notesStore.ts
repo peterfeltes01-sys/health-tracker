@@ -7,12 +7,13 @@ interface NotesState {
   boards: NoteBoard[]
   loading: boolean
   load: () => Promise<void>
-  addBoard: (title: string, reminderDate?: string, reminderTime?: string) => Promise<void>
+  addBoard: (title: string, reminderDate?: string, reminderTime?: string, color?: string) => Promise<void>
   updateBoard: (board: NoteBoard) => Promise<void>
   deleteBoard: (id: string) => Promise<void>
   toggleItem: (boardId: string, itemId: string) => Promise<void>
   addItem: (boardId: string, text: string) => Promise<void>
   deleteItem: (boardId: string, itemId: string) => Promise<void>
+  moveItem: (boardId: string, fromIndex: number, toIndex: number) => Promise<void>
   reset: () => void
 }
 
@@ -26,11 +27,12 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     set({ boards, loading: false })
   },
 
-  addBoard: async (title, reminderDate, reminderTime) => {
+  addBoard: async (title, reminderDate, reminderTime, color) => {
     const now = new Date().toISOString()
     const board: Omit<NoteBoard, 'id'> = {
       title,
       items: [],
+      color,
       reminderDate,
       reminderTime,
       createdAt: now,
@@ -86,6 +88,19 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       items: board.items.filter((item) => item.id !== itemId),
       updatedAt: new Date().toISOString(),
     }
+    await getRepository().updateNoteBoard(updated)
+    set({ boards: get().boards.map((b) => (b.id === boardId ? updated : b)) })
+  },
+
+  moveItem: async (boardId, fromIndex, toIndex) => {
+    const board = get().boards.find((b) => b.id === boardId)
+    if (!board) return
+    const items = [...board.items]
+    const [item] = items.splice(fromIndex, 1)
+    const adjustedTo = toIndex > fromIndex ? toIndex - 1 : toIndex
+    if (adjustedTo === fromIndex) return
+    items.splice(adjustedTo, 0, item)
+    const updated: NoteBoard = { ...board, items, updatedAt: new Date().toISOString() }
     await getRepository().updateNoteBoard(updated)
     set({ boards: get().boards.map((b) => (b.id === boardId ? updated : b)) })
   },

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { Plus, Trash2, Pencil, Bell, Check } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Plus, Trash2, Pencil, Bell, Check, GripVertical } from 'lucide-react'
 import { Header } from '../components/layout/Header'
 import { PageWrapper } from '../components/layout/PageWrapper'
 import { Modal } from '../components/shared/Modal'
@@ -8,12 +8,36 @@ import { Button } from '../components/shared/Button'
 import { useNotesStore } from '../stores/notesStore'
 import type { NoteBoard } from '../types'
 
+const COLOR_SWATCHES = [
+  { value: '', hex: '#9CA3AF' },
+  { value: 'yellow', hex: '#F59E0B' },
+  { value: 'green',  hex: '#10B981' },
+  { value: 'blue',   hex: '#3B82F6' },
+  { value: 'purple', hex: '#8B5CF6' },
+  { value: 'pink',   hex: '#EC4899' },
+  { value: 'red',    hex: '#EF4444' },
+  { value: 'orange', hex: '#F97316' },
+  { value: 'teal',   hex: '#14B8A6' },
+]
+
+const COLOR_HEX: Record<string, string> = {
+  yellow: '#F59E0B',
+  green:  '#10B981',
+  blue:   '#3B82F6',
+  purple: '#8B5CF6',
+  pink:   '#EC4899',
+  red:    '#EF4444',
+  orange: '#F97316',
+  teal:   '#14B8A6',
+}
+
 export function NotesPage() {
-  const { boards, loading, load, addBoard, updateBoard, deleteBoard, toggleItem, addItem, deleteItem } = useNotesStore()
+  const { boards, loading, load, addBoard, updateBoard, deleteBoard, toggleItem, addItem, deleteItem, moveItem } = useNotesStore()
 
   const [showBoardModal, setShowBoardModal] = useState(false)
   const [editBoard, setEditBoard] = useState<NoteBoard | null>(null)
   const [boardTitle, setBoardTitle] = useState('')
+  const [boardColor, setBoardColor] = useState('')
   const [reminderDate, setReminderDate] = useState('')
   const [reminderTime, setReminderTime] = useState('')
   const [newItemTexts, setNewItemTexts] = useState<Record<string, string>>({})
@@ -23,6 +47,7 @@ export function NotesPage() {
   function openCreateModal() {
     setEditBoard(null)
     setBoardTitle('')
+    setBoardColor('')
     setReminderDate('')
     setReminderTime('')
     setShowBoardModal(true)
@@ -31,6 +56,7 @@ export function NotesPage() {
   function openEditModal(board: NoteBoard) {
     setEditBoard(board)
     setBoardTitle(board.title)
+    setBoardColor(board.color ?? '')
     setReminderDate(board.reminderDate ?? '')
     setReminderTime(board.reminderTime ?? '')
     setShowBoardModal(true)
@@ -40,10 +66,11 @@ export function NotesPage() {
     if (!boardTitle.trim()) return
     const rd = reminderDate || undefined
     const rt = rd && reminderTime ? reminderTime : undefined
+    const color = boardColor || undefined
     if (editBoard) {
-      await updateBoard({ ...editBoard, title: boardTitle.trim(), reminderDate: rd, reminderTime: rt })
+      await updateBoard({ ...editBoard, title: boardTitle.trim(), reminderDate: rd, reminderTime: rt, color })
     } else {
-      await addBoard(boardTitle.trim(), rd, rt)
+      await addBoard(boardTitle.trim(), rd, rt, color)
     }
     setShowBoardModal(false)
   }
@@ -88,6 +115,7 @@ export function NotesPage() {
               onAddItem={() => handleAddItem(board.id)}
               onToggleItem={(itemId) => toggleItem(board.id, itemId)}
               onDeleteItem={(itemId) => deleteItem(board.id, itemId)}
+              onMoveItem={(from, to) => moveItem(board.id, from, to)}
               onEdit={() => openEditModal(board)}
               onDelete={() => deleteBoard(board.id)}
             />
@@ -108,6 +136,24 @@ export function NotesPage() {
             onChange={(e) => setBoardTitle(e.target.value)}
             onKeyDown={(e: React.KeyboardEvent) => e.key === 'Enter' && handleSaveBoard()}
           />
+
+          <div>
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Farbe</p>
+            <div className="flex gap-2 flex-wrap">
+              {COLOR_SWATCHES.map((c) => (
+                <button
+                  key={c.value}
+                  onClick={() => setBoardColor(c.value)}
+                  className={`w-7 h-7 rounded-full border-2 transition-all ${
+                    boardColor === c.value
+                      ? 'border-gray-900 dark:border-white scale-110'
+                      : 'border-transparent hover:scale-105'
+                  }`}
+                  style={{ backgroundColor: c.hex }}
+                />
+              ))}
+            </div>
+          </div>
 
           <div>
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
@@ -158,6 +204,7 @@ function BoardCard({
   onAddItem,
   onToggleItem,
   onDeleteItem,
+  onMoveItem,
   onEdit,
   onDelete,
 }: {
@@ -167,96 +214,155 @@ function BoardCard({
   onAddItem: () => void
   onToggleItem: (itemId: string) => void
   onDeleteItem: (itemId: string) => void
+  onMoveItem: (from: number, to: number) => void
   onEdit: () => void
   onDelete: () => void
 }) {
   const checked = board.items.filter((i) => i.checked).length
   const total = board.items.length
+  const [dragging, setDragging] = useState<number | null>(null)
+  const [overIdx, setOverIdx] = useState<number | null>(null)
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([])
+
+  function getIndexFromY(y: number): number {
+    for (let i = 0; i < itemRefs.current.length; i++) {
+      const el = itemRefs.current[i]
+      if (!el) continue
+      const rect = el.getBoundingClientRect()
+      if (y < rect.top + rect.height / 2) return i
+    }
+    return board.items.length - 1
+  }
+
+  function onGripDown(e: React.PointerEvent<HTMLButtonElement>, index: number) {
+    e.preventDefault()
+    e.currentTarget.setPointerCapture(e.pointerId)
+    setDragging(index)
+    setOverIdx(index)
+  }
+
+  function onGripMove(e: React.PointerEvent<HTMLButtonElement>) {
+    if (dragging === null) return
+    setOverIdx(getIndexFromY(e.clientY))
+  }
+
+  function onGripUp() {
+    if (dragging !== null && overIdx !== null && dragging !== overIdx && overIdx !== dragging + 1) {
+      onMoveItem(dragging, overIdx)
+    }
+    setDragging(null)
+    setOverIdx(null)
+  }
+
+  const accentColor = board.color ? COLOR_HEX[board.color] : undefined
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50 dark:border-gray-800/60">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-gray-900 dark:text-white text-sm truncate">{board.title}</h3>
-          {board.reminderDate && (
-            <div className="flex items-center gap-1 mt-0.5">
-              <Bell size={10} className="text-amber-500 flex-shrink-0" />
-              <span className="text-[10px] text-amber-500 font-medium">
-                {board.reminderDate}{board.reminderTime ? ` · ${board.reminderTime} Uhr` : ''}
-              </span>
-            </div>
-          )}
+    <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-100 dark:border-gray-800 overflow-hidden flex">
+      {accentColor && (
+        <div className="w-1.5 flex-shrink-0" style={{ backgroundColor: accentColor }} />
+      )}
+      <div className="flex-1 min-w-0">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-50 dark:border-gray-800/60">
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-gray-900 dark:text-white text-sm truncate">{board.title}</h3>
+            {board.reminderDate && (
+              <div className="flex items-center gap-1 mt-0.5">
+                <Bell size={10} className="text-amber-500 flex-shrink-0" />
+                <span className="text-[10px] text-amber-500 font-medium">
+                  {board.reminderDate}{board.reminderTime ? ` · ${board.reminderTime} Uhr` : ''}
+                </span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-1 ml-2 flex-shrink-0">
+            {total > 0 && (
+              <span className="text-xs text-gray-400 tabular-nums mr-1">{checked}/{total}</span>
+            )}
+            <button
+              onClick={onEdit}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              <Pencil size={14} />
+            </button>
+            <button
+              onClick={onDelete}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-          {total > 0 && (
-            <span className="text-xs text-gray-400 tabular-nums mr-1">{checked}/{total}</span>
-          )}
-          <button
-            onClick={onEdit}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-          >
-            <Pencil size={14} />
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
-          >
-            <Trash2 size={14} />
-          </button>
-        </div>
-      </div>
 
-      {/* Items */}
-      <div className="px-4 py-2">
-        {board.items.length === 0 && (
-          <p className="text-xs text-gray-400 dark:text-gray-600 py-1">Noch keine Einträge</p>
-        )}
-        <div className="space-y-0.5">
-          {board.items.map((item) => (
-            <div key={item.id} className="flex items-center gap-3 py-1.5 group">
-              <button
-                onClick={() => onToggleItem(item.id)}
-                className={`w-5 h-5 rounded-md flex-shrink-0 border-2 flex items-center justify-center transition-all ${
-                  item.checked
-                    ? 'bg-primary-500 border-primary-500'
-                    : 'border-gray-300 dark:border-gray-600 hover:border-primary-400'
-                }`}
-              >
-                {item.checked && <Check size={11} className="text-white" />}
-              </button>
-              <span
-                className={`flex-1 text-sm leading-snug ${
-                  item.checked
-                    ? 'line-through text-gray-400 dark:text-gray-600'
-                    : 'text-gray-800 dark:text-gray-200'
-                }`}
-              >
-                {item.text}
-              </span>
-              <button
-                onClick={() => onDeleteItem(item.id)}
-                className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-500 transition-all flex-shrink-0"
-              >
-                <Trash2 size={12} />
-              </button>
-            </div>
-          ))}
+        {/* Items */}
+        <div className="px-4 py-2">
+          {board.items.length === 0 && (
+            <p className="text-xs text-gray-400 dark:text-gray-600 py-1">Noch keine Einträge</p>
+          )}
+          <div className="space-y-0.5">
+            {board.items.map((item, index) => {
+              const isTarget = overIdx === index && dragging !== null && dragging !== index && overIdx !== dragging + 1
+              return (
+                <div
+                  key={item.id}
+                  ref={(el) => { itemRefs.current[index] = el }}
+                  className={`flex items-center gap-2 py-1.5 group border-t-2 transition-colors ${
+                    isTarget ? 'border-primary-500' : 'border-transparent'
+                  } ${dragging === index ? 'opacity-40' : ''}`}
+                >
+                  <button
+                    className="touch-none select-none cursor-grab active:cursor-grabbing p-0.5 text-gray-300 hover:text-gray-400 dark:text-gray-600 dark:hover:text-gray-500 flex-shrink-0"
+                    onPointerDown={(e) => onGripDown(e, index)}
+                    onPointerMove={onGripMove}
+                    onPointerUp={onGripUp}
+                    onPointerCancel={onGripUp}
+                  >
+                    <GripVertical size={14} />
+                  </button>
+                  <button
+                    onClick={() => onToggleItem(item.id)}
+                    className={`w-5 h-5 rounded-md flex-shrink-0 border-2 flex items-center justify-center transition-all ${
+                      item.checked
+                        ? 'bg-primary-500 border-primary-500'
+                        : 'border-gray-300 dark:border-gray-600 hover:border-primary-400'
+                    }`}
+                  >
+                    {item.checked && <Check size={11} className="text-white" />}
+                  </button>
+                  <span
+                    className={`flex-1 text-sm leading-snug ${
+                      item.checked
+                        ? 'line-through text-gray-400 dark:text-gray-600'
+                        : 'text-gray-800 dark:text-gray-200'
+                    }`}
+                  >
+                    {item.text}
+                  </span>
+                  <button
+                    onClick={() => onDeleteItem(item.id)}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-300 hover:text-red-500 transition-all flex-shrink-0"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              )
+            })}
+          </div>
         </div>
-      </div>
 
-      {/* Add item */}
-      <div className="px-4 pb-3 pt-1 flex gap-2">
-        <Input
-          placeholder="Neuer Eintrag…"
-          value={newItemText}
-          onChange={(e) => onNewItemTextChange(e.target.value)}
-          onKeyDown={(e: React.KeyboardEvent) => e.key === 'Enter' && onAddItem()}
-          className="flex-1"
-        />
-        <Button size="sm" onClick={onAddItem} disabled={!newItemText.trim()}>
-          <Plus size={14} />
-        </Button>
+        {/* Add item */}
+        <div className="px-4 pb-3 pt-1 flex gap-2">
+          <Input
+            placeholder="Neuer Eintrag…"
+            value={newItemText}
+            onChange={(e) => onNewItemTextChange(e.target.value)}
+            onKeyDown={(e: React.KeyboardEvent) => e.key === 'Enter' && onAddItem()}
+            className="flex-1"
+          />
+          <Button size="sm" onClick={onAddItem} disabled={!newItemText.trim()}>
+            <Plus size={14} />
+          </Button>
+        </div>
       </div>
     </div>
   )
