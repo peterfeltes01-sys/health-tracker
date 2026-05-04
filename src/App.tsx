@@ -16,6 +16,8 @@ import { CustomProductsPage } from './pages/CustomProductsPage'
 import { ValuesPage } from './pages/ValuesPage'
 import { MorePage } from './pages/MorePage'
 import { BreathingPage } from './pages/BreathingPage'
+import { NotesPage } from './pages/NotesPage'
+import { ReminderModal } from './components/notes/ReminderModal'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
@@ -26,6 +28,10 @@ import { useHydrationStore } from './stores/hydrationStore'
 import { useNutritionStore } from './stores/nutritionStore'
 import { useWeightStore } from './stores/weightStore'
 import { useBloodPressureStore } from './stores/bloodPressureStore'
+import { useBodyMeasurementStore } from './stores/bodyMeasurementStore'
+import { useCholesterolStore } from './stores/cholesterolStore'
+import { useBloodSugarStore } from './stores/bloodSugarStore'
+import { useNotesStore } from './stores/notesStore'
 import { useAuth } from './hooks/useAuth'
 import { setRepository } from './lib/repositoryRegistry'
 import { FirestoreRepository } from './repositories/FirestoreRepository'
@@ -72,6 +78,7 @@ function AppCore() {
     if (user) {
       setRepository(new FirestoreRepository(user.uid))
       loadSettings()
+      useNotesStore.getState().load()
     } else {
       useStepsStore.getState().reset()
       useActivitiesStore.getState().reset()
@@ -79,6 +86,10 @@ function AppCore() {
       useNutritionStore.getState().reset()
       useWeightStore.getState().reset()
       useBloodPressureStore.getState().reset()
+      useBodyMeasurementStore.getState().reset()
+      useCholesterolStore.getState().reset()
+      useBloodSugarStore.getState().reset()
+      useNotesStore.getState().reset()
       resetSettings()
       setRepository(new LocalStorageRepository())
     }
@@ -109,11 +120,13 @@ function AppCore() {
         <Route path="/values" element={<ProtectedRoute><ValuesPage /></ProtectedRoute>} />
         <Route path="/more" element={<ProtectedRoute><MorePage /></ProtectedRoute>} />
         <Route path="/breathing" element={<ProtectedRoute><BreathingPage /></ProtectedRoute>} />
+        <Route path="/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
       </Routes>
 
       {user && <BottomNav />}
+      {user && <ReminderModal />}
     </>
   )
 }

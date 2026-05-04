@@ -35,6 +35,7 @@ export const DEFAULT_DASHBOARD_WIDGETS = {
   hydration: true,
   steps: true,
   activities: true,
+  notes: true,
 }
 
 export const DEFAULT_SETTINGS = {
@@ -49,6 +50,7 @@ export const DEFAULT_SETTINGS = {
   heightCm: 175,
   waistCm: 0,
   hipCm: 0,
+  abdominalCm: 0,
   dashboardWidgets: DEFAULT_DASHBOARD_WIDGETS,
 }
 

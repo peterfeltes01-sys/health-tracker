@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Search, ScanBarcode, WifiOff } from 'lucide-react'
+import { Search, ScanBarcode, WifiOff, Star } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import type { FoodProduct } from '../../types'
 import { useFoodSearch } from '../../hooks/useFoodSearch'
 import { BarcodeScanner } from './BarcodeScanner'
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function ProductSearch({ onSelect }: Props) {
+  const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [showScanner, setShowScanner] = useState(false)
   const [scanLoading, setScanLoading] = useState(false)
@@ -67,6 +69,15 @@ export function ProductSearch({ onSelect }: Props) {
         {loading && (
           <p className="text-xs text-gray-400 text-center py-2">Suche…</p>
         )}
+
+        <button
+          type="button"
+          onClick={() => navigate('/nutrition/products')}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-sm font-medium hover:bg-amber-100 transition-colors"
+        >
+          <Star size={15} className="flex-shrink-0" />
+          Eigene Produkte verwalten & anlegen
+        </button>
 
         <div className="space-y-1 max-h-72 overflow-y-auto">
           {results.length === 0 && !loading && query.length > 1 && (

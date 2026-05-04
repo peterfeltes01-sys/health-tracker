@@ -9,6 +9,10 @@ import type {
   FoodProduct,
   WeightEntry,
   BloodPressureEntry,
+  BodyMeasurementEntry,
+  CholesterolEntry,
+  BloodSugarEntry,
+  NoteBoard,
 } from '../types'
 import type { DataRepository } from './DataRepository'
 import { DEFAULT_SETTINGS } from '../utils/constants'
@@ -26,6 +30,10 @@ const KEYS = {
   recentProducts: 'ht_recentProducts',
   weights: 'ht_weights',
   bloodPressure: 'ht_bloodPressure',
+  bodyMeasurements: 'ht_bodyMeasurements',
+  cholesterol: 'ht_cholesterol',
+  bloodSugar: 'ht_bloodSugar',
+  noteBoards: 'ht_noteBoards',
 }
 
 function load<T>(key: string, fallback: T): T {
@@ -51,6 +59,10 @@ export class LocalStorageRepository implements DataRepository {
   private recentProducts(): FoodProduct[] { return load<FoodProduct[]>(KEYS.recentProducts, []) }
   private weights(): WeightEntry[] { return load<WeightEntry[]>(KEYS.weights, []) }
   private bloodPressure(): BloodPressureEntry[] { return load<BloodPressureEntry[]>(KEYS.bloodPressure, []) }
+  private bodyMeasurements(): BodyMeasurementEntry[] { return load<BodyMeasurementEntry[]>(KEYS.bodyMeasurements, []) }
+  private cholesterolData(): CholesterolEntry[] { return load<CholesterolEntry[]>(KEYS.cholesterol, []) }
+  private bloodSugarData(): BloodSugarEntry[] { return load<BloodSugarEntry[]>(KEYS.bloodSugar, []) }
+  private noteBoardsData(): NoteBoard[] { return load<NoteBoard[]>(KEYS.noteBoards, []) }
 
   // ── Steps ──────────────────────────────────────────────────────────────────
 
@@ -229,6 +241,76 @@ export class LocalStorageRepository implements DataRepository {
 
   // ── Export / Import / Clear ────────────────────────────────────────────────
 
+  // ── Body Measurements ─────────────────────────────────────────────────────
+
+  async getBodyMeasurements(from?: string, to?: string): Promise<BodyMeasurementEntry[]> {
+    let all = this.bodyMeasurements().sort((a, b) => a.date.localeCompare(b.date))
+    if (from) all = all.filter((e) => e.date >= from)
+    if (to) all = all.filter((e) => e.date <= to)
+    return all
+  }
+  async addBodyMeasurement(entry: Omit<BodyMeasurementEntry, 'id'>): Promise<string> {
+    const id = generateId()
+    save(KEYS.bodyMeasurements, [...this.bodyMeasurements(), { ...entry, id }])
+    return id
+  }
+  async deleteBodyMeasurement(id: string): Promise<void> {
+    save(KEYS.bodyMeasurements, this.bodyMeasurements().filter((e) => e.id !== id))
+  }
+
+  // ── Cholesterol ────────────────────────────────────────────────────────────
+
+  async getCholesterolEntries(from?: string, to?: string): Promise<CholesterolEntry[]> {
+    let all = this.cholesterolData().sort((a, b) => a.date.localeCompare(b.date))
+    if (from) all = all.filter((e) => e.date >= from)
+    if (to) all = all.filter((e) => e.date <= to)
+    return all
+  }
+  async addCholesterolEntry(entry: Omit<CholesterolEntry, 'id'>): Promise<string> {
+    const id = generateId()
+    save(KEYS.cholesterol, [...this.cholesterolData(), { ...entry, id }])
+    return id
+  }
+  async deleteCholesterolEntry(id: string): Promise<void> {
+    save(KEYS.cholesterol, this.cholesterolData().filter((e) => e.id !== id))
+  }
+
+  // ── Blood Sugar ────────────────────────────────────────────────────────────
+
+  async getBloodSugarEntries(from?: string, to?: string): Promise<BloodSugarEntry[]> {
+    let all = this.bloodSugarData().sort((a, b) => a.date.localeCompare(b.date))
+    if (from) all = all.filter((e) => e.date >= from)
+    if (to) all = all.filter((e) => e.date <= to)
+    return all
+  }
+  async addBloodSugarEntry(entry: Omit<BloodSugarEntry, 'id'>): Promise<string> {
+    const id = generateId()
+    save(KEYS.bloodSugar, [...this.bloodSugarData(), { ...entry, id }])
+    return id
+  }
+  async deleteBloodSugarEntry(id: string): Promise<void> {
+    save(KEYS.bloodSugar, this.bloodSugarData().filter((e) => e.id !== id))
+  }
+
+  // ── Note Boards ────────────────────────────────────────────────────────────
+
+  async getNoteBoards(): Promise<NoteBoard[]> {
+    return this.noteBoardsData().sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+  }
+  async addNoteBoard(board: Omit<NoteBoard, 'id'>): Promise<string> {
+    const id = generateId()
+    save(KEYS.noteBoards, [...this.noteBoardsData(), { ...board, id }])
+    return id
+  }
+  async updateNoteBoard(board: NoteBoard): Promise<void> {
+    save(KEYS.noteBoards, this.noteBoardsData().map((b) => (b.id === board.id ? board : b)))
+  }
+  async deleteNoteBoard(id: string): Promise<void> {
+    save(KEYS.noteBoards, this.noteBoardsData().filter((b) => b.id !== id))
+  }
+
+  // ── Export / Import / Clear ────────────────────────────────────────────────
+
   async exportAll(): Promise<string> {
     return JSON.stringify({
       steps: this.steps(),
@@ -239,6 +321,10 @@ export class LocalStorageRepository implements DataRepository {
       customProducts: this.customProducts(),
       weights: this.weights(),
       bloodPressure: this.bloodPressure(),
+      bodyMeasurements: this.bodyMeasurements(),
+      cholesterol: this.cholesterolData(),
+      bloodSugar: this.bloodSugarData(),
+      noteBoards: this.noteBoardsData(),
       exportedAt: new Date().toISOString(),
     }, null, 2)
   }
@@ -253,6 +339,10 @@ export class LocalStorageRepository implements DataRepository {
     if (parsed.customProducts) save(KEYS.customProducts, parsed.customProducts)
     if (parsed.weights) save(KEYS.weights, parsed.weights)
     if (parsed.bloodPressure) save(KEYS.bloodPressure, parsed.bloodPressure)
+    if (parsed.bodyMeasurements) save(KEYS.bodyMeasurements, parsed.bodyMeasurements)
+    if (parsed.cholesterol) save(KEYS.cholesterol, parsed.cholesterol)
+    if (parsed.bloodSugar) save(KEYS.bloodSugar, parsed.bloodSugar)
+    if (parsed.noteBoards) save(KEYS.noteBoards, parsed.noteBoards)
   }
 
   async clearAll(): Promise<void> {

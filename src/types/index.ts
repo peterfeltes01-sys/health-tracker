@@ -109,6 +109,43 @@ export interface WeightEntry {
   timestamp: string
 }
 
+// === Körpermaße (Verlauf) ===
+
+export interface BodyMeasurementEntry {
+  id: string
+  date: string
+  waistCm?: number
+  hipCm?: number
+  abdominalCm?: number
+  timestamp: string
+}
+
+// === Cholesterin ===
+
+export interface CholesterolEntry {
+  id: string
+  date: string
+  totalMgDl?: number
+  ldlMgDl?: number
+  hdlMgDl?: number
+  triglyceridesMgDl?: number
+  notes?: string
+  timestamp: string
+}
+
+// === Blutzucker ===
+
+export type BloodSugarMeasurementType = 'fasting' | 'postprandial' | 'random'
+
+export interface BloodSugarEntry {
+  id: string
+  date: string
+  valueMgDl: number
+  measurementType: BloodSugarMeasurementType
+  notes?: string
+  timestamp: string
+}
+
 // === Blutdruck ===
 
 export type BPCategory =
@@ -132,6 +169,24 @@ export interface BloodPressureEntry {
   timestamp: string
 }
 
+// === Notizen ===
+
+export interface NoteItem {
+  id: string
+  text: string
+  checked: boolean
+}
+
+export interface NoteBoard {
+  id: string
+  title: string
+  items: NoteItem[]
+  reminderDate?: string
+  reminderTime?: string
+  createdAt: string
+  updatedAt: string
+}
+
 // === Settings ===
 
 export interface NutritionGoals {
@@ -148,6 +203,7 @@ export interface DashboardWidgets {
   hydration: boolean
   steps: boolean
   activities: boolean
+  notes: boolean
 }
 
 export interface UserSettings {
@@ -162,6 +218,7 @@ export interface UserSettings {
   heightCm?: number
   waistCm?: number
   hipCm?: number
+  abdominalCm?: number
   dashboardWidgets: DashboardWidgets
 }
 

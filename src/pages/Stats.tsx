@@ -72,7 +72,6 @@ export function Stats() {
 
           <WeeklyGoals
             activities={weekActivities}
-            calGoal={settings.weeklyCalorieGoal ?? 2000}
             actGoal={settings.weeklyActivityGoal ?? 5}
           />
 

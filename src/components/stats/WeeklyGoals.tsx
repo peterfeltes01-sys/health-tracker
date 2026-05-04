@@ -3,7 +3,6 @@ import { Card } from '../shared/Card'
 
 interface WeeklyGoalsProps {
   activities: Activity[]
-  calGoal: number
   actGoal: number
 }
 
@@ -32,22 +31,13 @@ function GoalBar({ value, goal, color, label, formattedValue, formattedGoal }: {
   )
 }
 
-export function WeeklyGoals({ activities, calGoal, actGoal }: WeeklyGoalsProps) {
-  const totalCal = Math.round(activities.reduce((s, a) => s + (a.calories ?? 0), 0))
+export function WeeklyGoals({ activities, actGoal }: WeeklyGoalsProps) {
   const totalActs = activities.length
 
   return (
     <Card>
       <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">🎯 Wochenziele</h3>
       <div className="space-y-4">
-        <GoalBar
-          value={totalCal}
-          goal={calGoal}
-          color="#f97316"
-          label="🔥 Kalorien"
-          formattedValue={`${totalCal.toLocaleString('de-DE')} kcal`}
-          formattedGoal={`${calGoal.toLocaleString('de-DE')} kcal`}
-        />
         <GoalBar
           value={totalActs}
           goal={actGoal}

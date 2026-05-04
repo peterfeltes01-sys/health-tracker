@@ -9,6 +9,10 @@ import type {
   FoodProduct,
   WeightEntry,
   BloodPressureEntry,
+  BodyMeasurementEntry,
+  CholesterolEntry,
+  BloodSugarEntry,
+  NoteBoard,
 } from '../types'
 
 export interface DataRepository {
@@ -64,6 +68,27 @@ export interface DataRepository {
   addBloodPressureEntry(entry: Omit<BloodPressureEntry, 'id' | 'category'>): Promise<string>
   updateBloodPressureEntry(entry: BloodPressureEntry): Promise<void>
   deleteBloodPressureEntry(id: string): Promise<void>
+
+  // Body Measurements
+  getBodyMeasurements(from?: string, to?: string): Promise<BodyMeasurementEntry[]>
+  addBodyMeasurement(entry: Omit<BodyMeasurementEntry, 'id'>): Promise<string>
+  deleteBodyMeasurement(id: string): Promise<void>
+
+  // Cholesterol
+  getCholesterolEntries(from?: string, to?: string): Promise<CholesterolEntry[]>
+  addCholesterolEntry(entry: Omit<CholesterolEntry, 'id'>): Promise<string>
+  deleteCholesterolEntry(id: string): Promise<void>
+
+  // Blood Sugar
+  getBloodSugarEntries(from?: string, to?: string): Promise<BloodSugarEntry[]>
+  addBloodSugarEntry(entry: Omit<BloodSugarEntry, 'id'>): Promise<string>
+  deleteBloodSugarEntry(id: string): Promise<void>
+
+  // Note Boards
+  getNoteBoards(): Promise<NoteBoard[]>
+  addNoteBoard(board: Omit<NoteBoard, 'id'>): Promise<string>
+  updateNoteBoard(board: NoteBoard): Promise<void>
+  deleteNoteBoard(id: string): Promise<void>
 
   exportAll(): Promise<string>
   importAll(data: string): Promise<void>

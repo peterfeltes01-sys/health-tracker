@@ -1,16 +1,15 @@
 import { useNavigate } from 'react-router-dom'
-import { BarChart2, History, Settings, ChevronRight, Package, Footprints, UtensilsCrossed, Wind } from 'lucide-react'
+import { BarChart2, Settings, ChevronRight, Footprints, UtensilsCrossed, Wind, ClipboardList } from 'lucide-react'
 import { Header } from '../components/layout/Header'
 import { PageWrapper } from '../components/layout/PageWrapper'
 
 const ITEMS = [
-  { icon: Wind, label: 'Atemübungen', desc: 'Stress abbauen · Beruhigen · Schlafen', to: '/breathing', color: 'text-teal-500' },
-  { icon: Footprints, label: 'Schritte-Verlauf', desc: 'Tägliche Schritte & Zielerreichung', to: '/steps-history', color: 'text-emerald-500' },
-  { icon: UtensilsCrossed, label: 'Ernährungs-Verlauf', desc: 'Kalorien & Mahlzeiten der letzten Tage', to: '/nutrition/history', color: 'text-rose-500' },
-  { icon: BarChart2, label: 'Statistiken', desc: 'Aktivitäten & Wochenziele', to: '/stats', color: 'text-purple-500' },
-  { icon: History, label: 'Verlauf', desc: 'Alle eingetragenen Daten', to: '/history', color: 'text-blue-500' },
-  { icon: Package, label: 'Eigene Produkte', desc: 'Lebensmittel selbst anlegen', to: '/nutrition/products', color: 'text-amber-500' },
-  { icon: Settings, label: 'Einstellungen', desc: 'Ziele, Profil & Daten', to: '/settings', color: 'text-gray-500' },
+  { icon: ClipboardList,   label: 'Notizen',           desc: 'Boards · Checklisten · Erinnerungen',      to: '/notes',              color: 'text-indigo-500' },
+  { icon: Wind,            label: 'Atemübungen',       desc: 'Stress abbauen · Beruhigen · Schlafen',    to: '/breathing',          color: 'text-teal-500' },
+  { icon: Footprints,      label: 'Schritte-Verlauf',  desc: 'Tägliche Schritte & Zielerreichung',       to: '/steps-history',      color: 'text-emerald-500' },
+  { icon: UtensilsCrossed, label: 'Ernährungs-Verlauf', desc: 'Kalorien & Mahlzeiten der letzten Tage', to: '/nutrition/history',  color: 'text-rose-500' },
+  { icon: BarChart2,       label: 'Statistiken',       desc: 'Aktivitäten & Wochenziele',                to: '/stats',              color: 'text-purple-500' },
+  { icon: Settings,        label: 'Einstellungen',     desc: 'Ziele, Profil & Daten',                    to: '/settings',           color: 'text-gray-500' },
 ]
 
 export function MorePage() {

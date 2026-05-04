@@ -1,9 +1,15 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { Trash2 } from 'lucide-react'
 import { useWeightStore } from '../../stores/weightStore'
 import { useSettingsStore } from '../../stores/settingsStore'
+import { useBodyMeasurementStore } from '../../stores/bodyMeasurementStore'
 import { Card } from '../shared/Card'
 import { Input } from '../shared/Input'
 import { Button } from '../shared/Button'
+import { BodyTrendChart } from './BodyTrendChart'
+import { toISODate } from '../../utils/calculations'
+import { subDays } from 'date-fns'
+import { formatDate } from '../../utils/formatters'
 
 function bmiCategory(bmi: number) {
   if (bmi < 18.5) return { label: 'Untergewicht', color: '#3b82f6' }
@@ -29,17 +35,25 @@ const BMI_SCALE = [
 export function BodyDashboard() {
   const { entries } = useWeightStore()
   const { settings, update } = useSettingsStore()
+  const { entries: measurements, load: loadMeasurements, add: addMeasurement, delete: deleteMeasurement } = useBodyMeasurementStore()
 
-  const [height, setHeight] = useState(String(settings.heightCm && settings.heightCm > 0 ? settings.heightCm : ''))
-  const [waist, setWaist]   = useState(String(settings.waistCm  && settings.waistCm  > 0 ? settings.waistCm  : ''))
-  const [hip, setHip]       = useState(String(settings.hipCm    && settings.hipCm    > 0 ? settings.hipCm    : ''))
+  const [height, setHeight]       = useState(String(settings.heightCm && settings.heightCm > 0 ? settings.heightCm : ''))
+  const [waist, setWaist]         = useState(String(settings.waistCm  && settings.waistCm  > 0 ? settings.waistCm  : ''))
+  const [hip, setHip]             = useState(String(settings.hipCm    && settings.hipCm    > 0 ? settings.hipCm    : ''))
+  const [abdominal, setAbdominal] = useState(String(settings.abdominalCm && settings.abdominalCm > 0 ? settings.abdominalCm : ''))
   const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    const from = toISODate(subDays(new Date(), 365))
+    loadMeasurements(from)
+  }, [])
 
   const latestWeight = [...entries].sort((a, b) => b.date.localeCompare(a.date))[0]
 
-  const heightCm = parseFloat(height) || 0
-  const waistCm  = parseFloat(waist)  || 0
-  const hipCm    = parseFloat(hip)    || 0
+  const heightCm    = parseFloat(height)    || 0
+  const waistCm     = parseFloat(waist)     || 0
+  const hipCm       = parseFloat(hip)       || 0
+  const abdominalCm = parseFloat(abdominal) || 0
 
   const bmi = heightCm > 0 && latestWeight
     ? latestWeight.weightKg / Math.pow(heightCm / 100, 2)
@@ -49,16 +63,24 @@ export function BodyDashboard() {
 
   const bmiCat = bmi ? bmiCategory(bmi) : null
   const whrCat = whr ? whrCategory(whr) : null
-
-  // BMI needle position (clamped 15–40, mapped to 0–100%)
   const bmiPos = bmi ? Math.min(100, Math.max(0, ((bmi - 15) / 25) * 100)) : null
 
   async function handleSave() {
     await update({
-      heightCm: heightCm > 0 ? heightCm : undefined,
-      waistCm:  waistCm  > 0 ? waistCm  : undefined,
-      hipCm:    hipCm    > 0 ? hipCm    : undefined,
+      heightCm:    heightCm    > 0 ? heightCm    : undefined,
+      waistCm:     waistCm     > 0 ? waistCm     : undefined,
+      hipCm:       hipCm       > 0 ? hipCm       : undefined,
+      abdominalCm: abdominalCm > 0 ? abdominalCm : undefined,
     })
+    if (waistCm > 0 || hipCm > 0 || abdominalCm > 0) {
+      await addMeasurement({
+        date:         toISODate(new Date()),
+        waistCm:      waistCm     > 0 ? waistCm     : undefined,
+        hipCm:        hipCm       > 0 ? hipCm       : undefined,
+        abdominalCm:  abdominalCm > 0 ? abdominalCm : undefined,
+        timestamp:    new Date().toISOString(),
+      })
+    }
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -89,7 +111,6 @@ export function BodyDashboard() {
           </p>
         )}
 
-        {/* Color scale */}
         <div className="relative h-3 rounded-full overflow-hidden flex mb-1">
           <div className="flex-none w-[30%] bg-blue-400" />
           <div className="flex-none w-[30%] bg-green-400" />
@@ -188,11 +209,56 @@ export function BodyDashboard() {
               onChange={(e) => setHip(e.target.value)}
             />
           </div>
+          <div>
+            <label className="text-sm text-gray-600 dark:text-gray-400 mb-1 block">Bauchumfang (cm)</label>
+            <Input
+              type="number"
+              placeholder="z.B. 88"
+              value={abdominal}
+              onChange={(e) => setAbdominal(e.target.value)}
+            />
+          </div>
           <Button fullWidth onClick={handleSave}>
-            {saved ? '✓ Gespeichert' : 'Speichern'}
+            {saved ? '✓ Gespeichert' : 'Speichern & in Verlauf eintragen'}
           </Button>
         </div>
       </Card>
+
+      {/* History chart */}
+      <Card>
+        <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+          Entwicklung Umfänge
+        </p>
+        <BodyTrendChart entries={measurements} />
+      </Card>
+
+      {/* History entries list */}
+      {measurements.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Verlauf</p>
+          {[...measurements].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20).map((entry) => (
+            <div
+              key={entry.id}
+              className="flex items-center gap-3 bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-3"
+            >
+              <div className="flex-1">
+                <p className="text-xs text-gray-400 mb-0.5">{formatDate(entry.date)}</p>
+                <div className="flex flex-wrap gap-3 text-sm">
+                  {entry.waistCm     && <span className="text-yellow-600 dark:text-yellow-400 font-medium">T: {entry.waistCm} cm</span>}
+                  {entry.hipCm       && <span className="text-purple-600 dark:text-purple-400 font-medium">H: {entry.hipCm} cm</span>}
+                  {entry.abdominalCm && <span className="text-red-500 dark:text-red-400 font-medium">B: {entry.abdominalCm} cm</span>}
+                </div>
+              </div>
+              <button
+                onClick={() => deleteMeasurement(entry.id)}
+                className="p-2 text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <Trash2 size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

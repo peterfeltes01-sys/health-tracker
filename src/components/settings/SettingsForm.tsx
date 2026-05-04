@@ -12,7 +12,6 @@ export function SettingsForm() {
   const [stepGoal, setStepGoal] = useState(settings.dailyStepGoal.toString())
   const [waterGoal, setWaterGoal] = useState(settings.dailyHydrationGoalMl.toString())
   const [quickAmounts, setQuickAmounts] = useState(settings.quickAddAmounts.join(', '))
-  const [weeklyCalGoal, setWeeklyCalGoal] = useState((settings.weeklyCalorieGoal ?? 2000).toString())
   const [weeklyActGoal, setWeeklyActGoal] = useState((settings.weeklyActivityGoal ?? 5).toString())
   const [saved, setSaved] = useState(false)
 
@@ -23,7 +22,6 @@ export function SettingsForm() {
       dailyStepGoal: parseInt(stepGoal) || 10000,
       dailyHydrationGoalMl: parseInt(waterGoal) || 2500,
       quickAddAmounts: quickAmounts.split(',').map((v) => parseInt(v.trim())).filter(Boolean),
-      weeklyCalorieGoal: parseInt(weeklyCalGoal) || 2000,
       weeklyActivityGoal: parseInt(weeklyActGoal) || 5,
     })
     setSaved(true)
@@ -80,14 +78,6 @@ export function SettingsForm() {
       <Card>
         <h3 className="font-semibold text-gray-900 dark:text-white mb-4">📅 Wochenziele</h3>
         <div className="space-y-3">
-          <Input
-            label="Wöchentliches Kalorienziel (kcal)"
-            type="number"
-            min="100"
-            step="100"
-            value={weeklyCalGoal}
-            onChange={(e) => setWeeklyCalGoal(e.target.value)}
-          />
           <Input
             label="Wöchentliches Aktivitätsziel (Einheiten)"
             type="number"

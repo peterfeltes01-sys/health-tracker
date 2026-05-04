@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Plus, Footprints, BarChart2, History, Settings, Package,
-  UtensilsCrossed, Wind, Droplets, ChevronDown, ChevronUp, Trash2,
+  Plus, Footprints, BarChart2, Settings,
+  UtensilsCrossed, Wind, Droplets, ChevronDown, ChevronUp, Trash2, Bell,
 } from 'lucide-react'
 import { Header } from '../components/layout/Header'
 import { PageWrapper } from '../components/layout/PageWrapper'
@@ -20,6 +20,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { useNutritionStore } from '../stores/nutritionStore'
 import { useWeightStore } from '../stores/weightStore'
 import { useBloodPressureStore } from '../stores/bloodPressureStore'
+import { useNotesStore } from '../stores/notesStore'
 import { toISODate } from '../utils/calculations'
 import { BP_CATEGORY_META } from '../lib/bloodPressure'
 import { DRINK_TYPES } from '../utils/constants'
@@ -28,13 +29,11 @@ import type { Activity, HydrationEntry } from '../types'
 import { subDays } from 'date-fns'
 
 const SHORTCUTS = [
-  { icon: Wind,            label: 'Atem',       to: '/breathing',          color: 'text-teal-500',    bg: 'bg-teal-50 dark:bg-teal-950/40' },
-  { icon: Footprints,      label: 'Schritte',   to: '/steps-history',      color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/40' },
-  { icon: UtensilsCrossed, label: 'Ernährung',  to: '/nutrition/history',  color: 'text-rose-500',    bg: 'bg-rose-50 dark:bg-rose-950/40' },
-  { icon: BarChart2,       label: 'Statistik',  to: '/stats',              color: 'text-purple-500',  bg: 'bg-purple-50 dark:bg-purple-950/40' },
-  { icon: History,         label: 'Verlauf',    to: '/history',            color: 'text-blue-500',    bg: 'bg-blue-50 dark:bg-blue-950/40' },
-  { icon: Package,         label: 'Produkte',   to: '/nutrition/products', color: 'text-amber-500',   bg: 'bg-amber-50 dark:bg-amber-950/40' },
-  { icon: Settings,        label: 'Einstellungen', to: '/settings',        color: 'text-gray-500',    bg: 'bg-gray-100 dark:bg-gray-800' },
+  { icon: Wind,            label: 'Atem',          to: '/breathing',         color: 'text-teal-500',    bg: 'bg-teal-50 dark:bg-teal-950/40' },
+  { icon: Footprints,      label: 'Schritte',      to: '/steps-history',     color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-950/40' },
+  { icon: UtensilsCrossed, label: 'Ernährung',     to: '/nutrition/history', color: 'text-rose-500',    bg: 'bg-rose-50 dark:bg-rose-950/40' },
+  { icon: BarChart2,       label: 'Statistik',     to: '/stats',             color: 'text-purple-500',  bg: 'bg-purple-50 dark:bg-purple-950/40' },
+  { icon: Settings,        label: 'Einstellungen', to: '/settings',          color: 'text-gray-500',    bg: 'bg-gray-100 dark:bg-gray-800' },
 ]
 
 const MACRO_COLORS = { carbs: '#3b82f6', fat: '#f59e0b', protein: '#ef4444' }
@@ -59,6 +58,7 @@ export function Dashboard() {
   const { meals, loadMealsByDate } = useNutritionStore()
   const { entries: weightEntries, load: loadWeight } = useWeightStore()
   const { entries: bpEntries, load: loadBP } = useBloodPressureStore()
+  const { boards } = useNotesStore()
 
   useEffect(() => {
     let cancelled = false
@@ -86,16 +86,18 @@ export function Dashboard() {
   const hydPct          = Math.min(100, Math.round((todayHydration / settings.dailyHydrationGoalMl) * 100))
 
   // Nutrition
-  const todayMeals     = meals.filter((m) => m.date === today)
-  const todayKcal      = todayMeals.reduce((s, m) => s + m.totals.kcal, 0)
-  const kcalGoal       = settings.nutritionGoals?.dailyKcal ?? 2000
+  const todayMeals      = meals.filter((m) => m.date === today)
+  const todayKcal       = todayMeals.reduce((s, m) => s + m.totals.kcal, 0)
+  const kcalGoal        = settings.nutritionGoals?.dailyKcal ?? 2000
+  const todayBurnedCal  = Math.round(todayActivities.reduce((s, a) => s + (a.calories ?? 0), 0))
+  const adjustedKcalGoal = kcalGoal + todayBurnedCal
   const todayNutrition = todayMeals.reduce(
     (acc, m) => ({ carbs: acc.carbs + m.totals.carbs, fat: acc.fat + m.totals.fat, protein: acc.protein + m.totals.protein }),
     { carbs: 0, fat: 0, protein: 0 }
   )
-  const goalCarbs = Math.round((kcalGoal * (settings.nutritionGoals?.carbsPercent  ?? 50)) / 100 / 4)
-  const goalFat   = Math.round((kcalGoal * (settings.nutritionGoals?.fatPercent    ?? 30)) / 100 / 9)
-  const goalProt  = Math.round((kcalGoal * (settings.nutritionGoals?.proteinPercent ?? 20)) / 100 / 4)
+  const goalCarbs = Math.round((adjustedKcalGoal * (settings.nutritionGoals?.carbsPercent  ?? 50)) / 100 / 4)
+  const goalFat   = Math.round((adjustedKcalGoal * (settings.nutritionGoals?.fatPercent    ?? 30)) / 100 / 9)
+  const goalProt  = Math.round((adjustedKcalGoal * (settings.nutritionGoals?.proteinPercent ?? 20)) / 100 / 4)
 
   // Weight / BP
   const latestWeight  = [...weightEntries].sort((a, b) => b.date.localeCompare(a.date))[0]
@@ -164,12 +166,18 @@ export function Dashboard() {
           <Card onClick={() => navigate('/nutrition')} className="cursor-pointer">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">🥗 Ernährung heute</p>
-              <p className="text-xs text-gray-400">Ziel: {kcalGoal} kcal</p>
+              {todayBurnedCal > 0 ? (
+                <p className="text-xs text-gray-400">
+                  Ziel: {kcalGoal} <span className="text-orange-500 font-medium">+{todayBurnedCal}</span> kcal
+                </p>
+              ) : (
+                <p className="text-xs text-gray-400">Ziel: {kcalGoal} kcal</p>
+              )}
             </div>
             <div className="flex items-center gap-4">
               <MacroDonut
                 kcal={todayKcal}
-                goalKcal={kcalGoal}
+                goalKcal={adjustedKcalGoal}
                 carbs={todayNutrition.carbs}
                 fat={todayNutrition.fat}
                 protein={todayNutrition.protein}
@@ -440,6 +448,55 @@ export function Dashboard() {
               </div>
             )}
           </div>
+          )}
+
+          {/* ── Notizen ── */}
+          {widgets.notes && (
+          <Card onClick={() => navigate('/notes')} className="cursor-pointer">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">📝 Notizen</p>
+              <span className="text-xs text-gray-400">
+                {boards.length === 0 ? 'Keine Boards' : `${boards.length} Board${boards.length !== 1 ? 's' : ''}`}
+              </span>
+            </div>
+            {boards.length === 0 ? (
+              <p className="text-xs text-gray-400 dark:text-gray-500">Tippe hier, um ein Board zu erstellen</p>
+            ) : (
+              <div className="space-y-2">
+                {boards.slice(0, 3).map((board) => {
+                  const checked = board.items.filter((i) => i.checked).length
+                  const total = board.items.length
+                  return (
+                    <div key={board.id} className="flex items-center gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">{board.title}</p>
+                        {total > 0 && (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <div className="flex-1 h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-primary-500 rounded-full transition-all"
+                                style={{ width: `${Math.round((checked / total) * 100)}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] text-gray-400 tabular-nums flex-shrink-0">{checked}/{total}</span>
+                          </div>
+                        )}
+                        {total === 0 && (
+                          <p className="text-[10px] text-gray-400">Keine Einträge</p>
+                        )}
+                      </div>
+                      {board.reminderDate && (
+                        <Bell size={12} className="text-amber-400 flex-shrink-0" />
+                      )}
+                    </div>
+                  )
+                })}
+                {boards.length > 3 && (
+                  <p className="text-[10px] text-gray-400">+{boards.length - 3} weitere</p>
+                )}
+              </div>
+            )}
+          </Card>
           )}
 
         </div>

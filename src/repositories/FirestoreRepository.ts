@@ -26,6 +26,10 @@ import type {
   FoodProduct,
   WeightEntry,
   BloodPressureEntry,
+  BodyMeasurementEntry,
+  CholesterolEntry,
+  BloodSugarEntry,
+  NoteBoard,
 } from '../types'
 import { DEFAULT_SETTINGS } from '../utils/constants'
 import { generateId } from '../utils/calculations'
@@ -309,12 +313,103 @@ export class FirestoreRepository implements DataRepository {
     await deleteDoc(doc(this.col('bloodPressure'), id))
   }
 
+  // ── Body Measurements ─────────────────────────────────────────────────────
+
+  async getBodyMeasurements(from?: string, to?: string): Promise<BodyMeasurementEntry[]> {
+    let q = query(this.col('bodyMeasurements'), orderBy('date', 'asc'))
+    if (from && to) {
+      q = query(this.col('bodyMeasurements'), where('date', '>=', from), where('date', '<=', to), orderBy('date', 'asc'))
+    } else if (from) {
+      q = query(this.col('bodyMeasurements'), where('date', '>=', from), orderBy('date', 'asc'))
+    }
+    const snap = await getDocs(q)
+    return this.mapDocs<BodyMeasurementEntry>(snap)
+  }
+
+  async addBodyMeasurement(entry: Omit<BodyMeasurementEntry, 'id'>): Promise<string> {
+    const id = generateId()
+    await setDoc(doc(this.col('bodyMeasurements'), id), { ...entry, id, _ts: Timestamp.now() })
+    return id
+  }
+
+  async deleteBodyMeasurement(id: string): Promise<void> {
+    await deleteDoc(doc(this.col('bodyMeasurements'), id))
+  }
+
+  // ── Cholesterol ────────────────────────────────────────────────────────────
+
+  async getCholesterolEntries(from?: string, to?: string): Promise<CholesterolEntry[]> {
+    let q = query(this.col('cholesterol'), orderBy('date', 'asc'))
+    if (from && to) {
+      q = query(this.col('cholesterol'), where('date', '>=', from), where('date', '<=', to), orderBy('date', 'asc'))
+    } else if (from) {
+      q = query(this.col('cholesterol'), where('date', '>=', from), orderBy('date', 'asc'))
+    }
+    const snap = await getDocs(q)
+    return this.mapDocs<CholesterolEntry>(snap)
+  }
+
+  async addCholesterolEntry(entry: Omit<CholesterolEntry, 'id'>): Promise<string> {
+    const id = generateId()
+    await setDoc(doc(this.col('cholesterol'), id), { ...entry, id, _ts: Timestamp.now() })
+    return id
+  }
+
+  async deleteCholesterolEntry(id: string): Promise<void> {
+    await deleteDoc(doc(this.col('cholesterol'), id))
+  }
+
+  // ── Blood Sugar ────────────────────────────────────────────────────────────
+
+  async getBloodSugarEntries(from?: string, to?: string): Promise<BloodSugarEntry[]> {
+    let q = query(this.col('bloodSugar'), orderBy('date', 'asc'))
+    if (from && to) {
+      q = query(this.col('bloodSugar'), where('date', '>=', from), where('date', '<=', to), orderBy('date', 'asc'))
+    } else if (from) {
+      q = query(this.col('bloodSugar'), where('date', '>=', from), orderBy('date', 'asc'))
+    }
+    const snap = await getDocs(q)
+    return this.mapDocs<BloodSugarEntry>(snap)
+  }
+
+  async addBloodSugarEntry(entry: Omit<BloodSugarEntry, 'id'>): Promise<string> {
+    const id = generateId()
+    await setDoc(doc(this.col('bloodSugar'), id), { ...entry, id, _ts: Timestamp.now() })
+    return id
+  }
+
+  async deleteBloodSugarEntry(id: string): Promise<void> {
+    await deleteDoc(doc(this.col('bloodSugar'), id))
+  }
+
+  // ── Note Boards ────────────────────────────────────────────────────────────
+
+  async getNoteBoards(): Promise<NoteBoard[]> {
+    const snap = await getDocs(query(this.col('noteBoards'), orderBy('createdAt', 'asc')))
+    return this.mapDocs<NoteBoard>(snap)
+  }
+
+  async addNoteBoard(board: Omit<NoteBoard, 'id'>): Promise<string> {
+    const id = generateId()
+    await setDoc(doc(this.col('noteBoards'), id), { ...board, id, _ts: Timestamp.now() })
+    return id
+  }
+
+  async updateNoteBoard(board: NoteBoard): Promise<void> {
+    const { id, ...data } = board
+    await updateDoc(doc(this.col('noteBoards'), id), { ...data, _ts: Timestamp.now() })
+  }
+
+  async deleteNoteBoard(id: string): Promise<void> {
+    await deleteDoc(doc(this.col('noteBoards'), id))
+  }
+
   // ── Export / Import / Clear ────────────────────────────────────────────────
 
   async exportAll(): Promise<string> {
     const FAR_FUTURE = '2099-12-31'
     const FAR_PAST = '2000-01-01'
-    const [steps, activities, hydration, settings, meals, customProducts, weights, bloodPressure] =
+    const [steps, activities, hydration, settings, meals, customProducts, weights, bloodPressure, bodyMeasurements, cholesterol, bloodSugar, noteBoards] =
       await Promise.all([
         this.getStepsByDateRange(FAR_PAST, FAR_FUTURE),
         this.getActivitiesByDateRange(FAR_PAST, FAR_FUTURE),
@@ -324,9 +419,13 @@ export class FirestoreRepository implements DataRepository {
         this.getCustomProducts(),
         this.getWeightEntries(),
         this.getBloodPressureEntries(),
+        this.getBodyMeasurements(),
+        this.getCholesterolEntries(),
+        this.getBloodSugarEntries(),
+        this.getNoteBoards(),
       ])
     return JSON.stringify(
-      { steps, activities, hydration, settings, meals, customProducts, weights, bloodPressure, exportedAt: new Date().toISOString() },
+      { steps, activities, hydration, settings, meals, customProducts, weights, bloodPressure, bodyMeasurements, cholesterol, bloodSugar, noteBoards, exportedAt: new Date().toISOString() },
       null,
       2
     )
@@ -350,6 +449,10 @@ export class FirestoreRepository implements DataRepository {
     if (Array.isArray(parsed.customProducts)) addToBatch('customProducts', parsed.customProducts)
     if (Array.isArray(parsed.weights)) addToBatch('weights', parsed.weights)
     if (Array.isArray(parsed.bloodPressure)) addToBatch('bloodPressure', parsed.bloodPressure)
+    if (Array.isArray(parsed.bodyMeasurements)) addToBatch('bodyMeasurements', parsed.bodyMeasurements)
+    if (Array.isArray(parsed.cholesterol)) addToBatch('cholesterol', parsed.cholesterol)
+    if (Array.isArray(parsed.bloodSugar)) addToBatch('bloodSugar', parsed.bloodSugar)
+    if (Array.isArray(parsed.noteBoards)) addToBatch('noteBoards', parsed.noteBoards)
     if (parsed.settings) {
       batch.set(this.userDoc(), { settings: parsed.settings }, { merge: true })
     }
@@ -357,7 +460,7 @@ export class FirestoreRepository implements DataRepository {
   }
 
   async clearAll(): Promise<void> {
-    const cols = ['steps', 'activities', 'hydration', 'meals', 'customProducts', 'mealTemplates', 'recentProducts', 'weights', 'bloodPressure'] as const
+    const cols = ['steps', 'activities', 'hydration', 'meals', 'customProducts', 'mealTemplates', 'recentProducts', 'weights', 'bloodPressure', 'bodyMeasurements', 'cholesterol', 'bloodSugar', 'noteBoards'] as const
     for (const colName of cols) {
       const snap = await getDocs(this.col(colName))
       if (snap.docs.length === 0) continue
