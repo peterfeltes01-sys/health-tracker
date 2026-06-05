@@ -1,4 +1,4 @@
-import { Play, RefreshCw } from 'lucide-react'
+import { Play, RefreshCw, Plus } from 'lucide-react'
 import type { Exercise, ExerciseMode } from '../../types/workout'
 import { estimateRoutineMinutes } from '../../utils/workout/routineBuilder'
 
@@ -16,8 +16,9 @@ const MUSCLE_LABELS: Record<string, string> = {
 interface TodayRoutineCardProps {
   exercises: Exercise[]
   mode: ExerciseMode
-  alreadyDone: boolean
+  sessionsToday: number
   onStart: () => void
+  onBonusStart: () => void
   onModeChange: (mode: ExerciseMode) => void
   onRebuild: () => void
 }
@@ -25,11 +26,13 @@ interface TodayRoutineCardProps {
 export function TodayRoutineCard({
   exercises,
   mode,
-  alreadyDone,
+  sessionsToday,
   onStart,
+  onBonusStart,
   onModeChange,
   onRebuild,
 }: TodayRoutineCardProps) {
+  const alreadyDone = sessionsToday > 0
   const minutes = estimateRoutineMinutes(exercises)
   const modes: ExerciseMode[] = ['bodyweight', 'bands', 'chair']
 
@@ -93,8 +96,17 @@ export function TodayRoutineCard({
         </div>
 
         {alreadyDone ? (
-          <div className="w-full py-3.5 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 font-bold rounded-2xl text-sm text-center border border-emerald-100 dark:border-emerald-900">
-            Heute bereits trainiert ✓
+          <div className="space-y-2">
+            <div className="w-full py-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 font-bold rounded-2xl text-sm text-center border border-emerald-100 dark:border-emerald-900">
+              {sessionsToday === 1 ? 'Einheit heute abgeschlossen ✓' : `${sessionsToday} Einheiten heute ✓`}
+            </div>
+            <button
+              onClick={onBonusStart}
+              className="w-full py-3.5 bg-primary-500 text-white font-bold rounded-2xl text-sm shadow-lg shadow-primary-500/25 active:scale-95 transition-transform flex items-center justify-center gap-2"
+            >
+              <Plus size={18} />
+              Weitere Übungen
+            </button>
           </div>
         ) : (
           <button

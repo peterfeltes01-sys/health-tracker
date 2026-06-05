@@ -6,24 +6,30 @@ import { PointBalanceCard } from './PointBalanceCard'
 import { WeeklyGoalCard } from './WeeklyGoalCard'
 import { QuickStatsRow } from './QuickStatsRow'
 import { sessionTargetPoints } from '../../utils/workout/scoring'
+import { toISODate } from '../../utils/calculations'
 
 type WorkoutView = 'dashboard' | 'session' | 'summary' | 'library' | 'medals' | 'progress' | 'settings'
 
 interface WorkoutDashboardProps {
   onNavigate: (view: WorkoutView) => void
   onStartSession: () => void
+  onStartBonusSession: () => void
 }
 
-export function WorkoutDashboard({ onNavigate, onStartSession }: WorkoutDashboardProps) {
+export function WorkoutDashboard({ onNavigate, onStartSession, onStartBonusSession }: WorkoutDashboardProps) {
   const {
     todayRoutine,
     todaySession,
+    recentSessions,
     stats,
     currentWeekGoal,
     preferredMode,
     buildRoutine,
     applyBalanceToday,
   } = useWorkoutStore()
+
+  const today = toISODate(new Date())
+  const sessionsToday = recentSessions.filter((s) => s.date === today).length
 
   const dailyTarget = sessionTargetPoints(todayRoutine)
   const belowTarget = todaySession ? todaySession.totalPoints < dailyTarget : false
@@ -41,8 +47,9 @@ export function WorkoutDashboard({ onNavigate, onStartSession }: WorkoutDashboar
       <TodayRoutineCard
         exercises={todayRoutine}
         mode={preferredMode}
-        alreadyDone={!!todaySession}
+        sessionsToday={sessionsToday}
         onStart={onStartSession}
+        onBonusStart={onStartBonusSession}
         onModeChange={(m: ExerciseMode) => buildRoutine(m)}
         onRebuild={() => buildRoutine()}
       />

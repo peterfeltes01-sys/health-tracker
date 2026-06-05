@@ -41,6 +41,7 @@ export function WorkoutPage() {
     startSession,
     finishSession,
     updateGoalSettings,
+    buildBonusRound,
   } = useWorkoutStore()
 
   const [view, setView] = useState<WorkoutView>('dashboard')
@@ -57,6 +58,12 @@ export function WorkoutPage() {
     startSession()
     setView('session')
   }, [startSession])
+
+  const handleStartBonusSession = useCallback(() => {
+    buildBonusRound()
+    startSession()
+    setView('session')
+  }, [buildBonusRound, startSession])
 
   const handleSessionFinish = useCallback(
     async (performed: PerformedExercise[]) => {
@@ -143,6 +150,7 @@ export function WorkoutPage() {
               <WorkoutDashboard
                 onNavigate={setView}
                 onStartSession={handleStartSession}
+                onStartBonusSession={handleStartBonusSession}
               />
             )}
             {view === 'library' && <ExerciseLibrary onBack={() => setView('dashboard')} />}

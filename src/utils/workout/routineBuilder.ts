@@ -88,6 +88,33 @@ export function buildTodayRoutine(
   return selected.slice(0, 6)
 }
 
+export function buildBonusRoutine(
+  mode: ExerciseMode,
+  doneExerciseIds: string[],
+  roundIndex: number = 1,
+  customExercises: CustomExercise[] = []
+): Exercise[] {
+  const today = new Date()
+  const seed =
+    today.getFullYear() * 10000 +
+    (today.getMonth() + 1) * 100 +
+    today.getDate() +
+    roundIndex * 1000
+  const rand = seededRandom(seed)
+
+  const allExercises: Exercise[] = [
+    ...EXERCISES,
+    ...customExercises.map(customExerciseToExercise),
+  ]
+  const doneSet = new Set(doneExerciseIds)
+
+  // Prefer exercises not yet done today
+  const fresh = allExercises.filter((e) => e.modes.includes(mode) && !doneSet.has(e.id))
+  const pool = fresh.length >= 3 ? fresh : allExercises.filter((e) => e.modes.includes(mode))
+
+  return shuffle(pool, rand).slice(0, Math.min(5, pool.length))
+}
+
 export function estimateRoutineMinutes(exercises: Exercise[]): number {
   let total = 0
   for (const ex of exercises) {

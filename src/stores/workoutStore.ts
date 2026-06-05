@@ -17,7 +17,7 @@ import { DEFAULT_WORKOUT_STATS, DEFAULT_WEEKLY_TARGET_DAYS, DEFAULT_WEEKLY_TARGE
 import { getWorkoutRepository } from '../lib/workoutRepositoryRegistry'
 import { compressImage } from '../lib/mediaUploader'
 import { getMediaUploader } from '../lib/mediaUploaderRegistry'
-import { buildTodayRoutine } from '../utils/workout/routineBuilder'
+import { buildTodayRoutine, buildBonusRoutine } from '../utils/workout/routineBuilder'
 import { sessionTotals, sessionTargetPoints, applyBalanceToCover } from '../utils/workout/scoring'
 import { getWeekId, buildEmptyWeeklyGoal, applySessionToWeeklyGoal, weeklyGoalBonus } from '../utils/workout/weeklyGoal'
 import { evaluateAchievements } from '../utils/workout/achievements'
@@ -48,6 +48,7 @@ interface WorkoutStoreState {
   finishSession(): Promise<{ newAchievements: Achievement[] }>
   applyBalanceToday(): Promise<void>
   updateGoalSettings(targetDays: number, targetPoints: number, mode?: ExerciseMode): void
+  buildBonusRound(): void
 
   // Media & Custom Exercises
   uploadExerciseMedia(
@@ -216,8 +217,8 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
 
     const weekId = getWeekId(new Date())
     const base = currentWeekGoal ?? buildEmptyWeeklyGoal(weekId, targetDays, targetPoints)
-    const prevInWeek = recentSessions.filter((s) => s.date !== today)
-    const updatedGoal = applySessionToWeeklyGoal(base, sessionObj, prevInWeek)
+    // Pass ALL recentSessions so multi-session days don't double-count training days
+    const updatedGoal = applySessionToWeeklyGoal(base, sessionObj, recentSessions)
 
     if (updatedGoal.achieved && !base.achieved) {
       const bonus = weeklyGoalBonus(targetPoints)
@@ -244,7 +245,7 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
       stats: newStats,
       currentWeekGoal: updatedGoal,
       achievements: [...achievements, ...newAchievements],
-      recentSessions: [...recentSessions.filter((s) => s.date !== today), completedSession],
+      recentSessions: [...recentSessions, completedSession],
     })
 
     return { newAchievements }
@@ -381,6 +382,16 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
     const updated = customExercises.filter((x) => x.id !== id)
     const routine = buildTodayRoutine(preferredMode, undefined, updated)
     set({ customExercises: updated, todayRoutine: routine })
+  },
+
+  buildBonusRound: () => {
+    const { preferredMode, recentSessions, customExercises } = get()
+    const today = toISODate(new Date())
+    const todaySessions = recentSessions.filter((s) => s.date === today)
+    const doneIds = todaySessions.flatMap((s) => s.performed.map((p) => p.exerciseId))
+    const roundIndex = todaySessions.length + 1
+    const bonusRoutine = buildBonusRoutine(preferredMode, doneIds, roundIndex, customExercises)
+    set({ todayRoutine: bonusRoutine })
   },
 
   reset: () =>
