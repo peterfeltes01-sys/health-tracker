@@ -18,6 +18,10 @@ import { MorePage } from './pages/MorePage'
 import { BreathingPage } from './pages/BreathingPage'
 import { NotesPage } from './pages/NotesPage'
 import { ReminderModal } from './components/notes/ReminderModal'
+import { HabitsPage } from './pages/HabitsPage'
+import { HabitDetailPage } from './pages/HabitDetailPage'
+import { HabitFormPage } from './pages/HabitFormPage'
+import { WorkoutPage } from './pages/WorkoutPage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage'
@@ -32,10 +36,18 @@ import { useBodyMeasurementStore } from './stores/bodyMeasurementStore'
 import { useCholesterolStore } from './stores/cholesterolStore'
 import { useBloodSugarStore } from './stores/bloodSugarStore'
 import { useNotesStore } from './stores/notesStore'
+import { useHabitStore } from './stores/habitStore'
+import { useWorkoutStore } from './stores/workoutStore'
 import { useAuth } from './hooks/useAuth'
 import { setRepository } from './lib/repositoryRegistry'
+import { setHabitRepository } from './lib/habitRepositoryRegistry'
+import { setWorkoutRepository } from './lib/workoutRepositoryRegistry'
+import { WorkoutFirestoreRepository } from './repositories/WorkoutFirestoreRepository'
+import { WorkoutLocalStorageRepository } from './repositories/WorkoutLocalStorageRepository'
 import { FirestoreRepository } from './repositories/FirestoreRepository'
 import { LocalStorageRepository } from './repositories/LocalStorageRepository'
+import { HabitFirestoreRepository } from './repositories/HabitFirestoreRepository'
+import { HabitLocalRepository } from './repositories/HabitLocalRepository'
 
 function ThemeController() {
   const theme = useSettingsStore((s) => s.settings.theme)
@@ -77,8 +89,11 @@ function AppCore() {
 
     if (user) {
       setRepository(new FirestoreRepository(user.uid))
+      setHabitRepository(new HabitFirestoreRepository(user.uid))
+      setWorkoutRepository(new WorkoutFirestoreRepository(user.uid))
       loadSettings()
       useNotesStore.getState().load()
+      useHabitStore.getState().load()
     } else {
       useStepsStore.getState().reset()
       useActivitiesStore.getState().reset()
@@ -90,8 +105,12 @@ function AppCore() {
       useCholesterolStore.getState().reset()
       useBloodSugarStore.getState().reset()
       useNotesStore.getState().reset()
+      useHabitStore.getState().reset()
+      useWorkoutStore.getState().reset()
       resetSettings()
       setRepository(new LocalStorageRepository())
+      setHabitRepository(new HabitLocalRepository())
+      setWorkoutRepository(new WorkoutLocalStorageRepository())
     }
   }, [user?.uid, authLoading])
 
@@ -121,6 +140,11 @@ function AppCore() {
         <Route path="/more" element={<ProtectedRoute><MorePage /></ProtectedRoute>} />
         <Route path="/breathing" element={<ProtectedRoute><BreathingPage /></ProtectedRoute>} />
         <Route path="/notes" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
+        <Route path="/habits" element={<ProtectedRoute><HabitsPage /></ProtectedRoute>} />
+        <Route path="/habits/new" element={<ProtectedRoute><HabitFormPage /></ProtectedRoute>} />
+        <Route path="/habits/:id/edit" element={<ProtectedRoute><HabitFormPage /></ProtectedRoute>} />
+        <Route path="/habits/:id" element={<ProtectedRoute><HabitDetailPage /></ProtectedRoute>} />
+        <Route path="/workout" element={<ProtectedRoute><WorkoutPage /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
       </Routes>
