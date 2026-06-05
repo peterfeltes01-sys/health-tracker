@@ -77,22 +77,22 @@ export function TodayRoutineCard({
           ))}
         </div>
 
-        {/* Exercise list preview */}
+        {/* Exercise list preview — alle Übungen sichtbar */}
         <div className="space-y-2 mb-4">
-          {exercises.slice(0, 4).map((ex) => (
+          {exercises.map((ex, i) => (
             <div key={ex.id} className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-primary-400 flex-shrink-0" />
-              <span className="text-sm text-gray-700 dark:text-gray-300 truncate">{ex.name}</span>
+              <span className="text-[10px] text-gray-300 dark:text-gray-600 w-4 text-right flex-shrink-0">{i + 1}</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300 flex-1 truncate">{ex.name}</span>
               <span className="text-xs text-gray-400 flex-shrink-0">
                 {ex.target.type === 'reps'
                   ? `${ex.target.sets}×${ex.target.reps}`
                   : `${ex.target.sets}×${ex.target.seconds}s`}
               </span>
+              <span className="text-[10px] font-semibold text-primary-400 flex-shrink-0">
+                {ex.basePoints}P
+              </span>
             </div>
           ))}
-          {exercises.length > 4 && (
-            <p className="text-xs text-gray-400 pl-3.5">+{exercises.length - 4} weitere</p>
-          )}
         </div>
 
         {alreadyDone ? (
