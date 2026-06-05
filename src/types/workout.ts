@@ -87,6 +87,31 @@ export interface ActiveSession {
   performed: PerformedExercise[]
 }
 
+// ── Custom Media & Exercises ────────────────────────────────────────────────
+
+export interface MediaItem {
+  type: 'image' | 'video'
+  url: string
+  storagePath: string
+  thumbnailUrl?: string
+  sizeBytes: number
+  uploadedAt: number
+}
+
+export interface ExerciseMediaOverride {
+  exerciseId: string
+  strategy: 'append' | 'replace'
+  customMedia: MediaItem[]
+  updatedAt: number
+}
+
+export interface CustomExercise extends Omit<Exercise, 'mediaUrls'> {
+  isCustom: true
+  ownerUid: string
+  media: MediaItem[]
+  createdAt: number
+}
+
 export const DEFAULT_WORKOUT_STATS: WorkoutStats = {
   totalPoints: 0,
   pointBalance: 0,

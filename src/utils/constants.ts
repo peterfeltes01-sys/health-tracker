@@ -36,6 +36,7 @@ export const DEFAULT_DASHBOARD_WIDGETS = {
   steps: true,
   activities: true,
   notes: true,
+  habits: true,
 }
 
 export const DEFAULT_SETTINGS = {

@@ -31,7 +31,7 @@ import type {
   BloodSugarEntry,
   NoteBoard,
 } from '../types'
-import { DEFAULT_SETTINGS } from '../utils/constants'
+import { DEFAULT_SETTINGS, DEFAULT_DASHBOARD_WIDGETS } from '../utils/constants'
 import { generateId } from '../utils/calculations'
 import { classifyBP } from '../lib/bloodPressure'
 
@@ -133,7 +133,12 @@ export class FirestoreRepository implements DataRepository {
     const snap = await getDoc(this.userDoc())
     if (snap.exists()) {
       const data = snap.data()
-      return { ...DEFAULT_SETTINGS, ...(data.settings ?? {}) } as UserSettings
+      const stored = data.settings ?? {}
+      return {
+        ...DEFAULT_SETTINGS,
+        ...stored,
+        dashboardWidgets: { ...DEFAULT_DASHBOARD_WIDGETS, ...stored.dashboardWidgets },
+      } as UserSettings
     }
     await setDoc(this.userDoc(), { settings: DEFAULT_SETTINGS }, { merge: true })
     return { ...DEFAULT_SETTINGS }

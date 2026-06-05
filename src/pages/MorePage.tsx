@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom'
-import { BarChart2, Settings, ChevronRight, Footprints, UtensilsCrossed, Wind, ClipboardList } from 'lucide-react'
+import { BarChart2, Settings, ChevronRight, Footprints, UtensilsCrossed, Wind, ClipboardList, Target } from 'lucide-react'
 import { Header } from '../components/layout/Header'
 import { PageWrapper } from '../components/layout/PageWrapper'
 
 const ITEMS = [
+  { icon: Target,          label: 'Gewohnheiten',      desc: 'Habits tracken · Streaks · Fortschritt',   to: '/habits',             color: 'text-violet-500' },
   { icon: ClipboardList,   label: 'Notizen',           desc: 'Boards · Checklisten · Erinnerungen',      to: '/notes',              color: 'text-indigo-500' },
   { icon: Wind,            label: 'Atemübungen',       desc: 'Stress abbauen · Beruhigen · Schlafen',    to: '/breathing',          color: 'text-teal-500' },
   { icon: Footprints,      label: 'Schritte-Verlauf',  desc: 'Tägliche Schritte & Zielerreichung',       to: '/steps-history',      color: 'text-emerald-500' },

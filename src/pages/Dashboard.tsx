@@ -21,6 +21,8 @@ import { useNutritionStore } from '../stores/nutritionStore'
 import { useWeightStore } from '../stores/weightStore'
 import { useBloodPressureStore } from '../stores/bloodPressureStore'
 import { useNotesStore } from '../stores/notesStore'
+import { useHabitStore } from '../stores/habitStore'
+import { HabitDashboardWidget } from '../components/dashboard/HabitDashboardWidget'
 import { toISODate } from '../utils/calculations'
 import { BP_CATEGORY_META } from '../lib/bloodPressure'
 import { DRINK_TYPES } from '../utils/constants'
@@ -59,6 +61,7 @@ export function Dashboard() {
   const { entries: weightEntries, load: loadWeight } = useWeightStore()
   const { entries: bpEntries, load: loadBP } = useBloodPressureStore()
   const { boards } = useNotesStore()
+  const { loadEntries: loadHabitEntries } = useHabitStore()
 
   useEffect(() => {
     let cancelled = false
@@ -72,6 +75,7 @@ export function Dashboard() {
     loadActivities(today)
     loadHydration(today)
     loadMealsByDate(today)
+    loadHabitEntries(today, today)
     const from = toISODate(subDays(new Date(), 30))
     loadWeight(from)
     loadBP(from)
@@ -448,6 +452,11 @@ export function Dashboard() {
               </div>
             )}
           </div>
+          )}
+
+          {/* ── Gewohnheiten ── */}
+          {widgets.habits && (
+          <HabitDashboardWidget today={today} />
           )}
 
           {/* ── Notizen ── */}

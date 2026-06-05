@@ -15,7 +15,7 @@ import type {
   NoteBoard,
 } from '../types'
 import type { DataRepository } from './DataRepository'
-import { DEFAULT_SETTINGS } from '../utils/constants'
+import { DEFAULT_SETTINGS, DEFAULT_DASHBOARD_WIDGETS } from '../utils/constants'
 import { generateId } from '../utils/calculations'
 import { classifyBP } from '../lib/bloodPressure'
 
@@ -116,7 +116,11 @@ export class LocalStorageRepository implements DataRepository {
 
   async getSettings(): Promise<UserSettings> {
     const stored = load<Partial<UserSettings>>(KEYS.settings, {})
-    return { ...DEFAULT_SETTINGS, ...stored }
+    return {
+      ...DEFAULT_SETTINGS,
+      ...stored,
+      dashboardWidgets: { ...DEFAULT_DASHBOARD_WIDGETS, ...stored.dashboardWidgets },
+    }
   }
   async updateSettings(settings: Partial<UserSettings>): Promise<void> {
     const current = await this.getSettings()

@@ -42,6 +42,8 @@ import { useAuth } from './hooks/useAuth'
 import { setRepository } from './lib/repositoryRegistry'
 import { setHabitRepository } from './lib/habitRepositoryRegistry'
 import { setWorkoutRepository } from './lib/workoutRepositoryRegistry'
+import { setMediaUploader } from './lib/mediaUploaderRegistry'
+import { FirebaseMediaUploader, NoOpMediaUploader } from './lib/mediaUploader'
 import { WorkoutFirestoreRepository } from './repositories/WorkoutFirestoreRepository'
 import { WorkoutLocalStorageRepository } from './repositories/WorkoutLocalStorageRepository'
 import { FirestoreRepository } from './repositories/FirestoreRepository'
@@ -91,6 +93,7 @@ function AppCore() {
       setRepository(new FirestoreRepository(user.uid))
       setHabitRepository(new HabitFirestoreRepository(user.uid))
       setWorkoutRepository(new WorkoutFirestoreRepository(user.uid))
+      setMediaUploader(new FirebaseMediaUploader())
       loadSettings()
       useNotesStore.getState().load()
       useHabitStore.getState().load()
@@ -111,6 +114,7 @@ function AppCore() {
       setRepository(new LocalStorageRepository())
       setHabitRepository(new HabitLocalRepository())
       setWorkoutRepository(new WorkoutLocalStorageRepository())
+      setMediaUploader(new NoOpMediaUploader())
     }
   }, [user?.uid, authLoading])
 

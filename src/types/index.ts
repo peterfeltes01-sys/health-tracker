@@ -205,6 +205,7 @@ export interface DashboardWidgets {
   steps: boolean
   activities: boolean
   notes: boolean
+  habits: boolean
 }
 
 export interface UserSettings {

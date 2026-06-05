@@ -1,5 +1,12 @@
 import type { WorkoutRepository } from './WorkoutRepository'
-import type { WorkoutSession, WorkoutStats, WeeklyGoal, Achievement } from '../types/workout'
+import type {
+  WorkoutSession,
+  WorkoutStats,
+  WeeklyGoal,
+  Achievement,
+  ExerciseMediaOverride,
+  CustomExercise,
+} from '../types/workout'
 import { DEFAULT_WORKOUT_STATS } from '../types/workout'
 import { generateId } from '../utils/calculations'
 
@@ -8,6 +15,8 @@ const KEYS = {
   stats: 'ht_workout_stats',
   weeklyGoals: 'ht_workout_weekly_goals',
   achievements: 'ht_workout_achievements',
+  mediaOverrides: 'ht_workout_media_overrides',
+  customExercises: 'ht_workout_custom_exercises',
 }
 
 function load<T>(key: string, fallback: T): T {
@@ -72,6 +81,52 @@ export class WorkoutLocalStorageRepository implements WorkoutRepository {
   async addAchievement(a: Achievement): Promise<void> {
     const existing = this.achievements_().filter((x) => x.id !== a.id)
     save(KEYS.achievements, [...existing, a])
+  }
+
+  // ── Media Overrides ─────────────────────────────────────────────────────────
+
+  async getMediaOverrides(): Promise<ExerciseMediaOverride[]> {
+    return load<ExerciseMediaOverride[]>(KEYS.mediaOverrides, [])
+  }
+
+  async upsertMediaOverride(o: ExerciseMediaOverride): Promise<void> {
+    const all = load<ExerciseMediaOverride[]>(KEYS.mediaOverrides, [])
+    save(KEYS.mediaOverrides, [...all.filter((x) => x.exerciseId !== o.exerciseId), o])
+  }
+
+  async deleteMediaItem(exerciseId: string, storagePath: string): Promise<void> {
+    const all = load<ExerciseMediaOverride[]>(KEYS.mediaOverrides, [])
+    const updated = all
+      .map((o) =>
+        o.exerciseId === exerciseId
+          ? { ...o, customMedia: o.customMedia.filter((m) => m.storagePath !== storagePath) }
+          : o
+      )
+      .filter((o) => o.customMedia.length > 0)
+    save(KEYS.mediaOverrides, updated)
+  }
+
+  // ── Custom Exercises ────────────────────────────────────────────────────────
+
+  async getCustomExercises(): Promise<CustomExercise[]> {
+    return load<CustomExercise[]>(KEYS.customExercises, [])
+  }
+
+  async addCustomExercise(e: Omit<CustomExercise, 'id'>): Promise<string> {
+    const id = `custom-${generateId()}`
+    const all = load<CustomExercise[]>(KEYS.customExercises, [])
+    save(KEYS.customExercises, [...all, { ...e, id } as CustomExercise])
+    return id
+  }
+
+  async updateCustomExercise(e: CustomExercise): Promise<void> {
+    const all = load<CustomExercise[]>(KEYS.customExercises, [])
+    save(KEYS.customExercises, all.map((x) => (x.id === e.id ? e : x)))
+  }
+
+  async deleteCustomExercise(id: string): Promise<void> {
+    const all = load<CustomExercise[]>(KEYS.customExercises, [])
+    save(KEYS.customExercises, all.filter((x) => x.id !== id))
   }
 
   async finishSessionAtomic({

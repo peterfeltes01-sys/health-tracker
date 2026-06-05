@@ -1,4 +1,11 @@
-import type { WorkoutSession, WorkoutStats, WeeklyGoal, Achievement } from '../types/workout'
+import type {
+  WorkoutSession,
+  WorkoutStats,
+  WeeklyGoal,
+  Achievement,
+  ExerciseMediaOverride,
+  CustomExercise,
+} from '../types/workout'
 
 export interface WorkoutRepository {
   addSession(session: Omit<WorkoutSession, 'id'>): Promise<string>
@@ -21,4 +28,15 @@ export interface WorkoutRepository {
     weeklyGoal: WeeklyGoal
     newAchievements: Achievement[]
   }): Promise<string>
+
+  // Media Overrides
+  getMediaOverrides(): Promise<ExerciseMediaOverride[]>
+  upsertMediaOverride(o: ExerciseMediaOverride): Promise<void>
+  deleteMediaItem(exerciseId: string, storagePath: string): Promise<void>
+
+  // Custom Exercises
+  getCustomExercises(): Promise<CustomExercise[]>
+  addCustomExercise(e: Omit<CustomExercise, 'id'>): Promise<string>
+  updateCustomExercise(e: CustomExercise): Promise<void>
+  deleteCustomExercise(id: string): Promise<void>
 }

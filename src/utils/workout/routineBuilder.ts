@@ -1,6 +1,8 @@
 import { getISODay } from 'date-fns'
 import type { Exercise, ExerciseMode, MuscleGroup } from '../../types/workout'
 import { EXERCISES } from '../../data/exercises'
+import type { CustomExercise } from '../../types/workout'
+import { customExerciseToExercise } from './mediaResolver'
 
 const DAY_FOCUS: Record<number, MuscleGroup[]> = {
   1: ['brust', 'schultern', 'rumpf'],
@@ -29,13 +31,21 @@ function shuffle<T>(arr: T[], rand: () => number): T[] {
   return a
 }
 
-export function buildTodayRoutine(mode: ExerciseMode, date?: Date): Exercise[] {
+export function buildTodayRoutine(
+  mode: ExerciseMode,
+  date?: Date,
+  customExercises: CustomExercise[] = []
+): Exercise[] {
   const today = date ?? new Date()
   const dayOfWeek = getISODay(today)
   const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate()
   const rand = seededRandom(seed)
 
-  const pool = EXERCISES.filter((e) => e.modes.includes(mode))
+  const allExercises: Exercise[] = [
+    ...EXERCISES,
+    ...customExercises.map(customExerciseToExercise),
+  ]
+  const pool = allExercises.filter((e) => e.modes.includes(mode))
   if (pool.length === 0) return []
 
   const focusMuscles = DAY_FOCUS[dayOfWeek] ?? DAY_FOCUS[1]

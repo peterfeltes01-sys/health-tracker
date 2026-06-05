@@ -9,6 +9,7 @@ const WIDGET_OPTIONS: { key: keyof DashboardWidgets; label: string; icon: string
   { key: 'steps',      label: 'Schritte',           icon: '👟' },
   { key: 'activities', label: 'Aktivitäten',        icon: '🏃' },
   { key: 'notes',      label: 'Notizen',            icon: '📝' },
+  { key: 'habits',     label: 'Gewohnheiten',       icon: '🎯' },
 ]
 
 export function DashboardWidgetsForm() {

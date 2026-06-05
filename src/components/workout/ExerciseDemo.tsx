@@ -51,18 +51,20 @@ function HumanFigure({ muscle }: { muscle: string }) {
 
 interface ExerciseDemoProps {
   exercise: Exercise
+  resolvedUrls?: string[]
   className?: string
 }
 
-export function ExerciseDemo({ exercise, className = '' }: ExerciseDemoProps) {
+export function ExerciseDemo({ exercise, resolvedUrls, className = '' }: ExerciseDemoProps) {
   const [imgIndex, setImgIndex] = useState(0)
   const [imgError, setImgError] = useState(false)
 
   const primaryMuscle = exercise.primaryMuscles[0] ?? 'ganzkoerper'
   const gradient = MUSCLE_COLORS[primaryMuscle] ?? MUSCLE_COLORS.ganzkoerper
 
-  const hasImage = exercise.mediaUrls.length > 0 && !imgError
-  const imgUrl = exercise.mediaUrls[imgIndex] ?? exercise.mediaUrls[0]
+  const urls = resolvedUrls ?? exercise.mediaUrls
+  const hasImage = urls.length > 0 && !imgError
+  const imgUrl = urls[imgIndex] ?? urls[0]
 
   return (
     <div className={`relative overflow-hidden rounded-3xl ${className}`}>
@@ -70,22 +72,34 @@ export function ExerciseDemo({ exercise, className = '' }: ExerciseDemoProps) {
 
       {hasImage ? (
         <div className="relative h-full w-full">
-          <img
-            key={imgUrl}
-            src={imgUrl}
-            alt={exercise.name}
-            className="h-full w-full object-contain object-center"
-            onError={() => {
-              if (imgIndex < exercise.mediaUrls.length - 1) {
-                setImgIndex(imgIndex + 1)
-              } else {
-                setImgError(true)
-              }
-            }}
-          />
-          {exercise.mediaUrls.length > 1 && (
+          {imgUrl.endsWith('.mp4') || imgUrl.includes('video') ? (
+            <video
+              key={imgUrl}
+              src={imgUrl}
+              className="h-full w-full object-contain"
+              autoPlay
+              loop
+              muted
+              playsInline
+            />
+          ) : (
+            <img
+              key={imgUrl}
+              src={imgUrl}
+              alt={exercise.name}
+              className="h-full w-full object-contain object-center"
+              onError={() => {
+                if (imgIndex < urls.length - 1) {
+                  setImgIndex(imgIndex + 1)
+                } else {
+                  setImgError(true)
+                }
+              }}
+            />
+          )}
+          {urls.length > 1 && (
             <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
-              {exercise.mediaUrls.map((_, i) => (
+              {urls.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setImgIndex(i)}
