@@ -3,8 +3,14 @@ import {
   uploadBytesResumable,
   getDownloadURL,
   deleteObject,
+  type FirebaseStorage,
 } from 'firebase/storage'
-import { storage } from './firebase'
+import { storage as _storage } from './firebase'
+
+function getStorage(): FirebaseStorage {
+  if (!_storage) throw new Error('Firebase Storage is not enabled on this project. Visit the Firebase Console to activate it.')
+  return _storage
+}
 
 export interface UploadResult {
   url: string
@@ -63,7 +69,7 @@ export class FirebaseMediaUploader implements MediaUploader {
     onProgress?: (pct: number) => void
   ): Promise<UploadResult> {
     return new Promise((resolve, reject) => {
-      const storageRef = ref(storage, storagePath)
+      const storageRef = ref(getStorage(), storagePath)
       const task = uploadBytesResumable(storageRef, file, {
         contentType: file.type,
       })
@@ -86,7 +92,7 @@ export class FirebaseMediaUploader implements MediaUploader {
   }
 
   async deleteFile(storagePath: string): Promise<void> {
-    await deleteObject(ref(storage, storagePath))
+    await deleteObject(ref(getStorage(), storagePath))
   }
 }
 

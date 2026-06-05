@@ -32,4 +32,11 @@ try {
 }
 
 export const db = _db
-export const storage = getStorage(app)
+
+let _storage: ReturnType<typeof getStorage> | null = null
+try {
+  _storage = getStorage(app)
+} catch {
+  // Firebase Storage not enabled on this project — upload features disabled
+}
+export const storage = _storage
