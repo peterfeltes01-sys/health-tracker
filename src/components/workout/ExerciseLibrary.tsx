@@ -3,9 +3,11 @@ import { Search, X, Plus, Pencil, ImagePlus } from 'lucide-react'
 import type { ExerciseMode, MuscleGroup } from '../../types/workout'
 import { EXERCISES } from '../../data/exercises'
 import { ExerciseDemo } from './ExerciseDemo'
-import { MediaUploadPanel } from './MediaUploadPanel'
+import { ExerciseMediaManager } from './ExerciseMediaManager'
 import { CustomExerciseForm } from './CustomExerciseForm'
 import { useWorkoutStore } from '../../stores/workoutStore'
+import { useExerciseMediaStore } from '../../stores/exerciseMediaStore'
+import { resolveExerciseMedia as resolveExerciseMediaNew } from '../../utils/workout/mediaUtils'
 import { resolveExerciseMedia, customExerciseToExercise } from '../../utils/workout/mediaResolver'
 import type { Exercise } from '../../types/workout'
 
@@ -37,6 +39,7 @@ interface ExerciseLibraryProps {
 
 export function ExerciseLibrary({ onBack: _onBack }: ExerciseLibraryProps) {
   const { mediaOverrides, customExercises } = useWorkoutStore()
+  const { overrides: mediaSettings, loadOverride } = useExerciseMediaStore()
 
   const [search, setSearch] = useState('')
   const [modeFilter, setModeFilter] = useState<ExerciseMode | null>(null)
@@ -60,7 +63,12 @@ export function ExerciseLibrary({ onBack: _onBack }: ExerciseLibraryProps) {
 
   const selectedEx = selectedId ? allExercises.find((e) => e.id === selectedId) : null
   const selectedOverride = selectedId ? mediaOverrides.find((o) => o.exerciseId === selectedId) : undefined
-  const resolvedUrls = selectedEx ? resolveExerciseMedia(selectedEx, selectedOverride) : []
+  const selectedMediaSettings = selectedId ? (mediaSettings[selectedId] ?? null) : null
+  const resolvedUrls = selectedEx
+    ? selectedMediaSettings
+      ? resolveExerciseMediaNew(selectedEx.mediaUrls, selectedMediaSettings).items.map((i) => i.url)
+      : resolveExerciseMedia(selectedEx, selectedOverride)
+    : []
   const isCustomSelected = selectedEx ? customExercises.some((c) => c.id === selectedEx.id) : false
   const customSelected = isCustomSelected ? customExercises.find((c) => c.id === selectedId) : undefined
 
@@ -102,7 +110,10 @@ export function ExerciseLibrary({ onBack: _onBack }: ExerciseLibraryProps) {
           {([['info', 'Info'], ['media', 'Medien'], ...(isCustomSelected ? [['edit', 'Bearbeiten']] : [])] as [DetailView, string][]).map(([v, label]) => (
             <button
               key={v}
-              onClick={() => setDetailView(v)}
+              onClick={() => {
+                setDetailView(v)
+                if (v === 'media' && selectedId) loadOverride(selectedId)
+              }}
               className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all ${
                 detailView === v
                   ? 'bg-white dark:bg-gray-800 text-primary-500 shadow-sm'
@@ -181,14 +192,10 @@ export function ExerciseLibrary({ onBack: _onBack }: ExerciseLibraryProps) {
 
         {detailView === 'media' && (
           <>
-            <ExerciseDemo exercise={selectedEx} resolvedUrls={resolvedUrls} className="h-48" />
             {resolvedUrls.length > 0 && (
-              <p className="text-xs text-gray-400 text-center">
-                {resolvedUrls.length} Medium/Medien aktiv
-                {selectedOverride && ` · Strategie: ${selectedOverride.strategy === 'append' ? 'Ergänzt' : 'Ersetzt'}`}
-              </p>
+              <ExerciseDemo exercise={selectedEx} resolvedUrls={resolvedUrls} className="h-48" />
             )}
-            <MediaUploadPanel exerciseId={selectedEx.id} override={selectedOverride} />
+            <ExerciseMediaManager exercise={selectedEx} />
           </>
         )}
 

@@ -38,10 +38,14 @@ import { useBloodSugarStore } from './stores/bloodSugarStore'
 import { useNotesStore } from './stores/notesStore'
 import { useHabitStore } from './stores/habitStore'
 import { useWorkoutStore } from './stores/workoutStore'
+import { useRoutineStore } from './stores/routineStore'
+import { useExerciseMediaStore } from './stores/exerciseMediaStore'
 import { useAuth } from './hooks/useAuth'
 import { setRepository } from './lib/repositoryRegistry'
 import { setHabitRepository } from './lib/habitRepositoryRegistry'
 import { setWorkoutRepository } from './lib/workoutRepositoryRegistry'
+import { setRoutineRepository } from './lib/routineRepositoryRegistry'
+import { setExerciseMediaRepository } from './lib/exerciseMediaRepositoryRegistry'
 import { setMediaUploader } from './lib/mediaUploaderRegistry'
 import { FirebaseMediaUploader, NoOpMediaUploader } from './lib/mediaUploader'
 import { WorkoutFirestoreRepository } from './repositories/WorkoutFirestoreRepository'
@@ -50,6 +54,10 @@ import { FirestoreRepository } from './repositories/FirestoreRepository'
 import { LocalStorageRepository } from './repositories/LocalStorageRepository'
 import { HabitFirestoreRepository } from './repositories/HabitFirestoreRepository'
 import { HabitLocalRepository } from './repositories/HabitLocalRepository'
+import { RoutineFirestoreRepository } from './repositories/RoutineFirestoreRepository'
+import { RoutineLocalStorageRepository } from './repositories/RoutineLocalStorageRepository'
+import { ExerciseMediaFirestoreRepository } from './repositories/ExerciseMediaFirestoreRepository'
+import { ExerciseMediaLocalStorageRepository } from './repositories/ExerciseMediaLocalStorageRepository'
 
 function ThemeController() {
   const theme = useSettingsStore((s) => s.settings.theme)
@@ -93,7 +101,10 @@ function AppCore() {
       setRepository(new FirestoreRepository(user.uid))
       setHabitRepository(new HabitFirestoreRepository(user.uid))
       setWorkoutRepository(new WorkoutFirestoreRepository(user.uid))
+      setRoutineRepository(new RoutineFirestoreRepository(user.uid))
+      setExerciseMediaRepository(new ExerciseMediaFirestoreRepository(user.uid))
       setMediaUploader(new FirebaseMediaUploader())
+      useExerciseMediaStore.getState().setUid(user.uid)
       loadSettings()
       useNotesStore.getState().load()
       useHabitStore.getState().load()
@@ -110,10 +121,14 @@ function AppCore() {
       useNotesStore.getState().reset()
       useHabitStore.getState().reset()
       useWorkoutStore.getState().reset()
+      useRoutineStore.getState().reset()
+      useExerciseMediaStore.getState().reset()
       resetSettings()
       setRepository(new LocalStorageRepository())
       setHabitRepository(new HabitLocalRepository())
       setWorkoutRepository(new WorkoutLocalStorageRepository())
+      setRoutineRepository(new RoutineLocalStorageRepository())
+      setExerciseMediaRepository(new ExerciseMediaLocalStorageRepository())
       setMediaUploader(new NoOpMediaUploader())
     }
   }, [user?.uid, authLoading])

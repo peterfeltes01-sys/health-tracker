@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ChevronRight, ChevronLeft, Check, Plus, Minus, X } from 'lucide-react'
+import { ChevronRight, ChevronLeft, Check, Plus, Minus, X, Shuffle } from 'lucide-react'
 import type { Exercise, PerformedExercise } from '../../types/workout'
 import { exercisePoints } from '../../utils/workout/scoring'
 import { ExerciseDemo } from './ExerciseDemo'
+import { shuffleExercises } from '../../utils/workout/routineUtils'
+import type { RoutineExercise } from '../../types/routine'
 
 const MUSCLE_LABELS: Record<string, string> = {
   brust: 'Brust',
@@ -93,11 +95,14 @@ function CountdownTimer({ seconds, onComplete }: TimerProps) {
 
 interface SessionPlayerProps {
   exercises: Exercise[]
+  routineExercises?: RoutineExercise[]
   onFinish: (performed: PerformedExercise[]) => void
   onAbort: () => void
 }
 
-export function SessionPlayer({ exercises, onFinish, onAbort }: SessionPlayerProps) {
+export function SessionPlayer({ exercises: initialExercises, routineExercises, onFinish, onAbort }: SessionPlayerProps) {
+  const [exercises, setExercises] = useState(initialExercises)
+  const [shuffled, setShuffled] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [currentSet, setCurrentSet] = useState(1)
   const [actualReps, setActualReps] = useState<number>(0)
@@ -107,8 +112,22 @@ export function SessionPlayer({ exercises, onFinish, onAbort }: SessionPlayerPro
   const [showInstructions, setShowInstructions] = useState(false)
   const [timerKey, setTimerKey] = useState(0)
   const [setReps, setSetReps] = useState<number[]>([])
+  const [showShuffleHint, setShowShuffleHint] = useState(!!routineExercises && !shuffled && currentIndex === 0 && performed.length === 0)
 
   const exercise = exercises[currentIndex]
+
+  const handleShuffle = useCallback(() => {
+    if (!routineExercises) return
+    const shuffledREs = shuffleExercises([...routineExercises])
+    const exerciseMap = new Map(initialExercises.map((e) => [e.id, e]))
+    const reordered = shuffledREs.flatMap((re) => {
+      const ex = exerciseMap.get(re.exerciseId)
+      return ex ? [ex] : []
+    })
+    setExercises(reordered)
+    setShuffled(true)
+    setShowShuffleHint(false)
+  }, [routineExercises, initialExercises])
 
   useEffect(() => {
     if (!exercise) return
@@ -188,6 +207,27 @@ export function SessionPlayer({ exercises, onFinish, onAbort }: SessionPlayerPro
           Anleitung
         </button>
       </div>
+
+      {/* Shuffle hint (only before first exercise) */}
+      {showShuffleHint && (
+        <div className="mx-4 mb-2 flex items-center justify-between bg-primary-50 dark:bg-primary-950/20 rounded-xl px-3 py-2">
+          <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">Heute mischen?</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowShuffleHint(false)}
+              className="text-xs text-gray-400 px-2 py-1 rounded-lg"
+            >
+              Nein
+            </button>
+            <button
+              onClick={handleShuffle}
+              className="flex items-center gap-1 text-xs font-semibold text-primary-500 bg-white dark:bg-gray-900 px-2.5 py-1 rounded-lg shadow-sm"
+            >
+              <Shuffle size={12} /> Mischen
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Progress bar */}
       <div className="mx-4 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
