@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, Dumbbell, Utensils, Activity, MoreHorizontal, Flame } from 'lucide-react'
+import { LayoutDashboard, Dumbbell, Utensils, Activity, MoreHorizontal, Flame, BarChart2 } from 'lucide-react'
 import { clsx } from 'clsx'
 
 const tabs = [
   { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/activities', icon: Dumbbell, label: 'Sport' },
   { to: '/workout', icon: Flame, label: 'Training' },
+  { to: '/balance', icon: BarChart2, label: 'Balance' },
   { to: '/nutrition', icon: Utensils, label: 'Ernährung' },
   { to: '/values', icon: Activity, label: 'Werte' },
   { to: '/more', icon: MoreHorizontal, label: 'Mehr' },

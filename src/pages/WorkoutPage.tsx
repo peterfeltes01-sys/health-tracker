@@ -15,6 +15,7 @@ import { useRoutineStore } from '../stores/routineStore'
 import { useAuth } from '../hooks/useAuth'
 import { buildExercisesFromRoutine } from '../utils/workout/routineUtils'
 import type { PerformedExercise, Achievement, WorkoutSession } from '../types/workout'
+import type { LoggedSet } from '../types/training'
 import type { Routine, RoutineExercise } from '../types/routine'
 
 type WorkoutTab = 'heute' | 'routinen' | 'verlauf'
@@ -119,7 +120,7 @@ export function WorkoutPage() {
   }, [buildBonusRound, startSession])
 
   const handleSessionFinish = useCallback(
-    async (performed: PerformedExercise[]) => {
+    async (performed: PerformedExercise[], _loggedSets: LoggedSet[]) => {
       const store = useWorkoutStore.getState()
       if (store.activeSession) {
         useWorkoutStore.setState({

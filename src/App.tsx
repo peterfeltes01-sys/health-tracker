@@ -47,6 +47,7 @@ import { setWorkoutRepository } from './lib/workoutRepositoryRegistry'
 import { setRoutineRepository } from './lib/routineRepositoryRegistry'
 import { setExerciseMediaRepository } from './lib/exerciseMediaRepositoryRegistry'
 import { setMediaUploader } from './lib/mediaUploaderRegistry'
+import { setMovementFamilyRepository } from './lib/movementFamilyRepositoryRegistry'
 import { FirebaseMediaUploader, NoOpMediaUploader } from './lib/mediaUploader'
 import { WorkoutFirestoreRepository } from './repositories/WorkoutFirestoreRepository'
 import { WorkoutLocalStorageRepository } from './repositories/WorkoutLocalStorageRepository'
@@ -58,6 +59,9 @@ import { RoutineFirestoreRepository } from './repositories/RoutineFirestoreRepos
 import { RoutineLocalStorageRepository } from './repositories/RoutineLocalStorageRepository'
 import { ExerciseMediaFirestoreRepository } from './repositories/ExerciseMediaFirestoreRepository'
 import { ExerciseMediaLocalStorageRepository } from './repositories/ExerciseMediaLocalStorageRepository'
+import { MovementFamilyFirestoreRepository } from './repositories/MovementFamilyFirestoreRepository'
+import { MovementFamilyLocalStorageRepository } from './repositories/MovementFamilyLocalStorageRepository'
+import { BalancePage } from './pages/BalancePage'
 
 function ThemeController() {
   const theme = useSettingsStore((s) => s.settings.theme)
@@ -103,6 +107,7 @@ function AppCore() {
       setWorkoutRepository(new WorkoutFirestoreRepository(user.uid))
       setRoutineRepository(new RoutineFirestoreRepository(user.uid))
       setExerciseMediaRepository(new ExerciseMediaFirestoreRepository(user.uid))
+      setMovementFamilyRepository(new MovementFamilyFirestoreRepository(user.uid))
       setMediaUploader(new FirebaseMediaUploader())
       useExerciseMediaStore.getState().setUid(user.uid)
       loadSettings()
@@ -129,6 +134,7 @@ function AppCore() {
       setWorkoutRepository(new WorkoutLocalStorageRepository())
       setRoutineRepository(new RoutineLocalStorageRepository())
       setExerciseMediaRepository(new ExerciseMediaLocalStorageRepository())
+      setMovementFamilyRepository(new MovementFamilyLocalStorageRepository())
       setMediaUploader(new NoOpMediaUploader())
     }
   }, [user?.uid, authLoading])
@@ -164,6 +170,7 @@ function AppCore() {
         <Route path="/habits/:id/edit" element={<ProtectedRoute><HabitFormPage /></ProtectedRoute>} />
         <Route path="/habits/:id" element={<ProtectedRoute><HabitDetailPage /></ProtectedRoute>} />
         <Route path="/workout" element={<ProtectedRoute><WorkoutPage /></ProtectedRoute>} />
+        <Route path="/balance" element={<ProtectedRoute><BalancePage /></ProtectedRoute>} />
 
         <Route path="*" element={<Navigate to={user ? '/' : '/login'} replace />} />
       </Routes>

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { format } from 'date-fns'
+import { format, subDays, startOfDay, endOfDay } from 'date-fns'
 import type {
   Exercise,
   ExerciseMode,
@@ -13,8 +13,10 @@ import type {
   CustomExercise,
   MediaItem,
 } from '../types/workout'
+import type { MovementFamily, LoggedSet } from '../types/training'
 import { DEFAULT_WORKOUT_STATS, DEFAULT_WEEKLY_TARGET_DAYS, DEFAULT_WEEKLY_TARGET_POINTS } from '../types/workout'
 import { getWorkoutRepository } from '../lib/workoutRepositoryRegistry'
+import { getMovementFamilyRepository } from '../lib/movementFamilyRepositoryRegistry'
 import { compressImage } from '../lib/mediaUploader'
 import { getMediaUploader } from '../lib/mediaUploaderRegistry'
 import { buildTodayRoutine, buildBonusRoutine } from '../utils/workout/routineBuilder'
@@ -22,6 +24,24 @@ import { sessionTotals, sessionTargetPoints, applyBalanceToCover } from '../util
 import { getWeekId, buildEmptyWeeklyGoal, applySessionToWeeklyGoal, weeklyGoalBonus } from '../utils/workout/weeklyGoal'
 import { evaluateAchievements } from '../utils/workout/achievements'
 import { toISODate } from '../utils/calculations'
+import { EXERCISES } from '../data/exercises'
+import { computeWeeklyVolume } from '../features/workout/logic/volume'
+import { analyzeBalance } from '../features/workout/logic/balance'
+import { computeRecovery } from '../features/workout/logic/recovery'
+import type { MuscleVolume, BucketVolume } from '../features/workout/logic/volume'
+import type { BalanceWarning } from '../features/workout/logic/balance'
+import type { RecoveryStatus } from '../features/workout/logic/recovery'
+import type { ProgressionSuggestion } from '../features/workout/logic/progression'
+import { evaluateProgression } from '../features/workout/logic/progression'
+import type { SessionSetsForExercise } from '../features/workout/logic/progression'
+
+interface RestTimerState {
+  activeExerciseId: string | null
+  totalSeconds: number
+  secondsRemaining: number
+  isRunning: boolean
+  isPaused: boolean
+}
 
 interface WorkoutStoreState {
   uid: string | null
@@ -41,6 +61,17 @@ interface WorkoutStoreState {
   loading: boolean
   error: string | null
 
+  // Progression & families
+  movementFamilies: MovementFamily[]
+  progressionSuggestion: ProgressionSuggestion | null
+  progressionOverrides: Record<string, string> // fromExerciseId → toExerciseId
+
+  // Logged sets (per-set data)
+  loggedSetsBuffer: LoggedSet[] // accumulated during active session
+
+  // Rest timer
+  restTimer: RestTimerState
+
   load(uid: string): Promise<void>
   buildRoutine(mode?: ExerciseMode): void
   startSession(mode?: ExerciseMode): void
@@ -49,6 +80,26 @@ interface WorkoutStoreState {
   applyBalanceToday(): Promise<void>
   updateGoalSettings(targetDays: number, targetPoints: number, mode?: ExerciseMode): void
   buildBonusRound(): void
+
+  // Logged sets
+  addLoggedSet(set: LoggedSet): void
+
+  // Progression
+  computeProgressionForExercise(exercise: Exercise): void
+  acceptProgression(fromExerciseId: string, toExerciseId: string): void
+
+  // Rest timer
+  startRest(exerciseId: string, seconds: number): void
+  tickRest(): void
+  addRestTime(delta: number): void
+  pauseRest(): void
+  resumeRest(): void
+  skipRest(): void
+
+  // Volume / Balance / Recovery selectors (derived, no persistence needed)
+  selectWeeklyVolume(): { byMuscle: MuscleVolume[]; byBucket: BucketVolume[] }
+  selectBalanceWarnings(): BalanceWarning[]
+  selectRecovery(): RecoveryStatus[]
 
   // Media & Custom Exercises
   uploadExerciseMedia(
@@ -63,6 +114,18 @@ interface WorkoutStoreState {
   deleteCustomExercise(id: string): Promise<void>
 
   reset(): void
+}
+
+const DEFAULT_REST_TIMER: RestTimerState = {
+  activeExerciseId: null,
+  totalSeconds: 0,
+  secondsRemaining: 0,
+  isRunning: false,
+  isPaused: false,
+}
+
+function deriveLoggedSetsFromSessions(sessions: WorkoutSession[]): LoggedSet[] {
+  return sessions.flatMap((s) => s.loggedSets ?? [])
 }
 
 export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
@@ -83,10 +146,17 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
   loading: false,
   error: null,
 
+  movementFamilies: [],
+  progressionSuggestion: null,
+  progressionOverrides: {},
+  loggedSetsBuffer: [],
+  restTimer: { ...DEFAULT_REST_TIMER },
+
   load: async (uid) => {
     set({ loading: true, error: null, uid })
     try {
       const repo = getWorkoutRepository()
+      const familyRepo = getMovementFamilyRepository()
       const today = toISODate(new Date())
       const weekStart = format(new Date(), 'yyyy-MM-01')
       const range = { from: weekStart, to: today }
@@ -100,6 +170,7 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
         todaySession,
         mediaOverrides,
         customExercises,
+        movementFamilies,
       ] = await Promise.all([
         repo.getStats(),
         repo.getWeeklyGoal(getWeekId(new Date())),
@@ -109,12 +180,14 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
         repo.getSessionByDate(today),
         repo.getMediaOverrides(),
         repo.getCustomExercises(),
+        familyRepo.getAll(),
       ])
 
       const mode = (stats as WorkoutStats & { preferredMode?: ExerciseMode }).preferredMode ?? 'bodyweight'
       const targetDays = (stats as WorkoutStats & { targetDays?: number }).targetDays ?? DEFAULT_WEEKLY_TARGET_DAYS
       const targetPoints_ = (stats as WorkoutStats & { targetPoints?: number }).targetPoints ?? DEFAULT_WEEKLY_TARGET_POINTS
 
+      const { progressionOverrides } = get()
       const routine = buildTodayRoutine(mode, undefined, customExercises)
       const currentWeekGoal = weekGoal ?? buildEmptyWeeklyGoal(getWeekId(new Date()), targetDays, targetPoints_)
 
@@ -131,17 +204,48 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
         targetPoints: targetPoints_,
         mediaOverrides,
         customExercises,
+        movementFamilies,
         loading: false,
       })
+      // Apply any pending progression overrides
+      if (Object.keys(progressionOverrides).length > 0) {
+        get().buildRoutine(mode)
+      }
     } catch (e) {
       set({ loading: false, error: String(e) })
     }
   },
 
   buildRoutine: (mode) => {
-    const { preferredMode, customExercises } = get()
+    const { preferredMode, customExercises, progressionOverrides } = get()
     const effectiveMode = mode ?? preferredMode
-    const routine = buildTodayRoutine(effectiveMode, undefined, customExercises)
+    let routine = buildTodayRoutine(effectiveMode, undefined, customExercises)
+
+    // Apply pending progression overrides (substitute exercise with preferred variation)
+    if (Object.keys(progressionOverrides).length > 0) {
+      const allExercises: Exercise[] = [
+        ...EXERCISES,
+        ...customExercises.map((ce) => ({
+          id: ce.id,
+          name: ce.name,
+          modes: ce.modes,
+          primaryMuscles: ce.primaryMuscles,
+          secondaryMuscles: ce.secondaryMuscles,
+          difficulty: ce.difficulty,
+          target: ce.target,
+          basePoints: ce.basePoints,
+          mediaUrls: ce.media.map((m) => m.url),
+          instructions: ce.instructions,
+          chairVariantNote: ce.chairVariantNote,
+        })),
+      ]
+      const exerciseMap = new Map(allExercises.map((e) => [e.id, e]))
+      routine = routine.map((ex) => {
+        const overrideId = progressionOverrides[ex.id]
+        return overrideId && exerciseMap.has(overrideId) ? exerciseMap.get(overrideId)! : ex
+      })
+    }
+
     set({ todayRoutine: routine, preferredMode: effectiveMode })
   },
 
@@ -171,8 +275,109 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
     })
   },
 
+  addLoggedSet: (loggedSet) => {
+    set((s) => ({ loggedSetsBuffer: [...s.loggedSetsBuffer, loggedSet] }))
+  },
+
+  computeProgressionForExercise: (exercise) => {
+    const { recentSessions, movementFamilies } = get()
+    const family = movementFamilies.find((f) => f.levels.includes(exercise.id)) ?? null
+
+    // Build SessionSetsForExercise from historical loggedSets
+    const sessionMap = new Map<string, SessionSetsForExercise>()
+    for (const session of recentSessions) {
+      for (const ls of session.loggedSets ?? []) {
+        if (ls.exerciseId !== exercise.id) continue
+        const existing = sessionMap.get(session.date)
+        if (existing) {
+          existing.sets.push({ reps: ls.reps, rir: ls.rir })
+        } else {
+          sessionMap.set(session.date, {
+            sessionDate: session.date,
+            sets: [{ reps: ls.reps, rir: ls.rir }],
+          })
+        }
+      }
+    }
+    const recent = Array.from(sessionMap.values()).sort((a, b) =>
+      a.sessionDate.localeCompare(b.sessionDate)
+    )
+
+    const suggestion = evaluateProgression(exercise, family, recent)
+    set({ progressionSuggestion: suggestion })
+  },
+
+  acceptProgression: (fromExerciseId, toExerciseId) => {
+    set((s) => ({
+      progressionOverrides: { ...s.progressionOverrides, [fromExerciseId]: toExerciseId },
+    }))
+  },
+
+  startRest: (exerciseId, seconds) => {
+    set({
+      restTimer: {
+        activeExerciseId: exerciseId,
+        totalSeconds: seconds,
+        secondsRemaining: seconds,
+        isRunning: true,
+        isPaused: false,
+      },
+    })
+  },
+
+  tickRest: () => {
+    set((s) => {
+      const t = s.restTimer
+      if (!t.isRunning || t.isPaused || t.secondsRemaining <= 0) return s
+      const next = t.secondsRemaining - 1
+      return { restTimer: { ...t, secondsRemaining: next, isRunning: next > 0 } }
+    })
+  },
+
+  addRestTime: (delta) => {
+    set((s) => ({
+      restTimer: {
+        ...s.restTimer,
+        secondsRemaining: Math.max(0, s.restTimer.secondsRemaining + delta),
+        totalSeconds: Math.max(0, s.restTimer.totalSeconds + delta),
+      },
+    }))
+  },
+
+  pauseRest: () => {
+    set((s) => ({ restTimer: { ...s.restTimer, isPaused: true } }))
+  },
+
+  resumeRest: () => {
+    set((s) => ({ restTimer: { ...s.restTimer, isPaused: false } }))
+  },
+
+  skipRest: () => {
+    set({ restTimer: { ...DEFAULT_REST_TIMER } })
+  },
+
+  selectWeeklyVolume: () => {
+    const { recentSessions } = get()
+    const allLoggedSets = deriveLoggedSetsFromSessions(recentSessions)
+    const now = new Date()
+    const windowStart = startOfDay(subDays(now, 6))
+    const windowEnd = endOfDay(now)
+    return computeWeeklyVolume(allLoggedSets, windowStart, windowEnd)
+  },
+
+  selectBalanceWarnings: () => {
+    const { byMuscle, byBucket } = get().selectWeeklyVolume()
+    return analyzeBalance(byBucket, byMuscle)
+  },
+
+  selectRecovery: () => {
+    const { recentSessions } = get()
+    const allLoggedSets = deriveLoggedSetsFromSessions(recentSessions)
+    return computeRecovery(allLoggedSets, new Date())
+  },
+
   finishSession: async () => {
-    const { activeSession, stats, currentWeekGoal, todayRoutine, recentSessions, weeklyHistory, achievements, targetDays, targetPoints } = get()
+    const { activeSession, stats, currentWeekGoal, todayRoutine, recentSessions, weeklyHistory, achievements, targetDays, targetPoints, loggedSetsBuffer } = get()
     if (!activeSession) return { newAchievements: [] }
 
     const now = Date.now()
@@ -213,6 +418,7 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
       performed: activeSession.performed,
       totalPoints,
       bonusPoints,
+      loggedSets: loggedSetsBuffer.length > 0 ? loggedSetsBuffer : undefined,
     }
 
     const weekId = getWeekId(new Date())
@@ -246,6 +452,7 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
       currentWeekGoal: updatedGoal,
       achievements: [...achievements, ...newAchievements],
       recentSessions: [...recentSessions, completedSession],
+      loggedSetsBuffer: [],
     })
 
     return { newAchievements }
@@ -409,5 +616,10 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
       customExercises: [],
       loading: false,
       error: null,
+      movementFamilies: [],
+      progressionSuggestion: null,
+      progressionOverrides: {},
+      loggedSetsBuffer: [],
+      restTimer: { ...DEFAULT_REST_TIMER },
     }),
 }))

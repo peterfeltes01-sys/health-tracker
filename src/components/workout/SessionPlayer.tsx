@@ -1,10 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ChevronRight, ChevronLeft, Check, Plus, Minus, X, Shuffle } from 'lucide-react'
 import type { Exercise, PerformedExercise } from '../../types/workout'
+import type { LoggedSet } from '../../types/training'
 import { exercisePoints } from '../../utils/workout/scoring'
 import { ExerciseDemo } from './ExerciseDemo'
 import { shuffleExercises } from '../../utils/workout/routineUtils'
 import type { RoutineExercise } from '../../types/routine'
+import { ProgressionChip } from './ProgressionChip'
+import { RestTimerOverlay } from './RestTimerOverlay'
+import { useWorkoutStore } from '../../stores/workoutStore'
+import { broadToTraining } from '../../features/workout/logic/muscleMapping'
 
 const MUSCLE_LABELS: Record<string, string> = {
   brust: 'Brust',
@@ -93,26 +98,53 @@ function CountdownTimer({ seconds, onComplete }: TimerProps) {
   )
 }
 
+// RIR selector: one-tap 0–4, skippable
+function RirSelector({ value, onChange }: { value: number | null; onChange: (v: number | null) => void }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="text-[10px] text-gray-400 font-medium mr-0.5">RIR</span>
+      {[0, 1, 2, 3, 4].map((n) => (
+        <button
+          key={n}
+          onClick={() => onChange(value === n ? null : n)}
+          className={`w-7 h-7 rounded-lg text-xs font-bold transition-all active:scale-90 ${
+            value === n
+              ? 'bg-primary-500 text-white shadow-sm'
+              : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+          }`}
+        >
+          {n}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 interface SessionPlayerProps {
   exercises: Exercise[]
   routineExercises?: RoutineExercise[]
-  onFinish: (performed: PerformedExercise[]) => void
+  onFinish: (performed: PerformedExercise[], loggedSets: LoggedSet[]) => void
   onAbort: () => void
 }
 
 export function SessionPlayer({ exercises: initialExercises, routineExercises, onFinish, onAbort }: SessionPlayerProps) {
+  const { addLoggedSet, startRest, movementFamilies } = useWorkoutStore()
+
   const [exercises, setExercises] = useState(initialExercises)
   const [shuffled, setShuffled] = useState(false)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [currentSet, setCurrentSet] = useState(1)
   const [actualReps, setActualReps] = useState<number>(0)
+  const [currentRir, setCurrentRir] = useState<number | null>(null)
   const [performed, setPerformed] = useState<PerformedExercise[]>([])
+  const [localLoggedSets, setLocalLoggedSets] = useState<LoggedSet[]>([])
   const [showToast, setShowToast] = useState(false)
   const [lastResult, setLastResult] = useState<{ points: number; bonus: number } | null>(null)
   const [showInstructions, setShowInstructions] = useState(false)
   const [timerKey, setTimerKey] = useState(0)
   const [setReps, setSetReps] = useState<number[]>([])
   const [showShuffleHint, setShowShuffleHint] = useState(!!routineExercises && !shuffled && currentIndex === 0 && performed.length === 0)
+  const setStartTimeRef = useRef<number>(Date.now())
 
   const exercise = exercises[currentIndex]
 
@@ -136,15 +168,48 @@ export function SessionPlayer({ exercises: initialExercises, routineExercises, o
     }
     setCurrentSet(1)
     setSetReps([])
+    setCurrentRir(null)
     setShowInstructions(false)
     setTimerKey((k) => k + 1)
+    setStartTimeRef.current = Date.now()
   }, [currentIndex, exercise])
+
+  const buildLoggedSet = useCallback(
+    (reps: number, rir: number | null, restTakenSeconds: number | null): LoggedSet => {
+      const family = movementFamilies.find((f) => f.levels.includes(exercise.id)) ?? null
+      const primaryTraining = exercise.trainingMusclesPrimary ??
+        exercise.primaryMuscles.flatMap(broadToTraining)
+      const secondaryTraining = exercise.trainingMusclesSecondary ??
+        exercise.secondaryMuscles.flatMap(broadToTraining)
+      return {
+        exerciseId: exercise.id,
+        exerciseName: exercise.name,
+        movementFamilyId: family?.id ?? null,
+        variationLevel: family ? family.levels.indexOf(exercise.id) + 1 : null,
+        primaryMusclesSnapshot: primaryTraining,
+        secondaryMusclesSnapshot: secondaryTraining,
+        reps,
+        rir,
+        isWarmup: false,
+        restTakenSeconds,
+        timestamp: new Date().toISOString(),
+      }
+    },
+    [exercise, movementFamilies]
+  )
 
   const handleSetComplete = useCallback(() => {
     if (!exercise) return
     const reps = exercise.target.type === 'reps' ? actualReps : 0
     const newSetReps = [...setReps, reps]
     setSetReps(newSetReps)
+
+    // Record per-set logged entry
+    const restTaken = null // will be set when timer completes, tracked separately
+    const ls = buildLoggedSet(reps, currentRir, restTaken)
+    setLocalLoggedSets((prev) => [...prev, ls])
+    addLoggedSet(ls)
+    setCurrentRir(null)
 
     if (currentSet >= exercise.target.sets) {
       const totalActualReps = newSetReps.reduce((a, b) => a + b, 0)
@@ -172,17 +237,45 @@ export function SessionPlayer({ exercises: initialExercises, routineExercises, o
       const updatedPerformed = [...performed, p]
       setPerformed(updatedPerformed)
 
+      // Start rest timer if configured
+      const restSecs = exercise.restSeconds ?? null
+      if (restSecs && restSecs > 0 && currentIndex + 1 < exercises.length) {
+        startRest(exercise.id, restSecs)
+      }
+
       if (currentIndex + 1 >= exercises.length) {
         setTimeout(() => {
           setShowToast(false)
-          onFinish(updatedPerformed)
+          const allSets = [...localLoggedSets, ls]
+          onFinish(updatedPerformed, allSets)
         }, 2100)
       }
     } else {
       setCurrentSet((s) => s + 1)
       setTimerKey((k) => k + 1)
+      setStartTimeRef.current = Date.now()
+
+      // Start intra-exercise rest timer
+      const restSecs = exercise.restSeconds ?? null
+      if (restSecs && restSecs > 0) {
+        startRest(exercise.id, restSecs)
+      }
     }
-  }, [exercise, currentSet, actualReps, setReps, performed, currentIndex, exercises.length, onFinish])
+  }, [
+    exercise,
+    currentSet,
+    actualReps,
+    currentRir,
+    setReps,
+    performed,
+    localLoggedSets,
+    currentIndex,
+    exercises.length,
+    onFinish,
+    buildLoggedSet,
+    addLoggedSet,
+    startRest,
+  ])
 
   if (!exercise) return null
 
@@ -228,6 +321,9 @@ export function SessionPlayer({ exercises: initialExercises, routineExercises, o
           </div>
         </div>
       )}
+
+      {/* Progression chip */}
+      <ProgressionChip exercise={exercise} />
 
       {/* Progress bar */}
       <div className="mx-4 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
@@ -292,14 +388,16 @@ export function SessionPlayer({ exercises: initialExercises, routineExercises, o
       </p>
 
       {/* Controls */}
-      <div className="px-4 pb-8 pt-4">
+      <div className="px-4 pb-4 pt-3">
         {exercise.target.type === 'duration' ? (
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-3">
             <CountdownTimer
               key={timerKey}
               seconds={exercise.target.seconds}
               onComplete={handleSetComplete}
             />
+            {/* RIR input for duration exercises */}
+            <RirSelector value={currentRir} onChange={setCurrentRir} />
             <button
               onClick={handleSetComplete}
               className="w-full py-4 bg-primary-500 text-white font-bold rounded-2xl text-base shadow-lg shadow-primary-500/30 active:scale-95 transition-transform"
@@ -308,7 +406,7 @@ export function SessionPlayer({ exercises: initialExercises, routineExercises, o
             </button>
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-3">
             <div className="flex items-center gap-6">
               <button
                 onClick={() => setActualReps((r) => Math.max(0, r - 1))}
@@ -327,6 +425,8 @@ export function SessionPlayer({ exercises: initialExercises, routineExercises, o
                 <Plus size={22} />
               </button>
             </div>
+            {/* RIR selector (optional, skippable) */}
+            <RirSelector value={currentRir} onChange={setCurrentRir} />
             <button
               onClick={handleSetComplete}
               className="w-full py-4 bg-primary-500 text-white font-bold rounded-2xl text-base shadow-lg shadow-primary-500/30 active:scale-95 transition-transform flex items-center justify-center gap-2"
@@ -339,7 +439,7 @@ export function SessionPlayer({ exercises: initialExercises, routineExercises, o
       </div>
 
       {/* Navigation */}
-      <div className="flex justify-between px-6 pb-6 -mt-2">
+      <div className="flex justify-between px-6 pb-6 -mt-1">
         <button
           onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
           disabled={currentIndex === 0}
@@ -368,6 +468,9 @@ export function SessionPlayer({ exercises: initialExercises, routineExercises, o
           }}
         />
       )}
+
+      {/* Rest timer overlay — does not block input */}
+      <RestTimerOverlay />
     </div>
   )
 }

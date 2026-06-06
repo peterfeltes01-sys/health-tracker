@@ -1,3 +1,5 @@
+import type { TrainingMuscleGroup, TrainingIntent, LoggedSet } from './training'
+
 export type ExerciseMode = 'bands' | 'bodyweight' | 'chair'
 
 export type MuscleGroup =
@@ -24,6 +26,15 @@ export interface Exercise {
   mediaUrls: string[]
   instructions: string[]
   chairVariantNote?: string
+  // Progression & training metadata (optional, added progressively)
+  movementFamilyId?: string | null
+  difficultyLevel?: number | null
+  defaultRepRange?: { min: number; max: number }
+  defaultTargetSets?: number
+  intent?: TrainingIntent
+  restSeconds?: number | null
+  trainingMusclesPrimary?: TrainingMuscleGroup[]
+  trainingMusclesSecondary?: TrainingMuscleGroup[]
 }
 
 export interface PerformedExercise {
@@ -46,6 +57,7 @@ export interface WorkoutSession {
   performed: PerformedExercise[]
   totalPoints: number
   bonusPoints: number
+  loggedSets?: LoggedSet[]
 }
 
 export interface WorkoutStats {
