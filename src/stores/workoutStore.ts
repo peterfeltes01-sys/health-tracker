@@ -21,6 +21,7 @@ import { compressImage } from '../lib/mediaUploader'
 import { getMediaUploader } from '../lib/mediaUploaderRegistry'
 import { buildTodayRoutine, buildBonusRoutine } from '../utils/workout/routineBuilder'
 import { sessionTotals, sessionTargetPoints, applyBalanceToCover } from '../utils/workout/scoring'
+import { computeSessionQuality } from '../utils/training/sessionQuality'
 import { getWeekId, buildEmptyWeeklyGoal, applySessionToWeeklyGoal, weeklyGoalBonus } from '../utils/workout/weeklyGoal'
 import { evaluateAchievements } from '../utils/workout/achievements'
 import { toISODate } from '../utils/calculations'
@@ -387,7 +388,12 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
     const { totalPoints, bonusPoints } = sessionTotals(activeSession.performed)
     const targetPts = sessionTargetPoints(todayRoutine)
 
-    const surplus = Math.max(0, totalPoints - targetPts)
+    // PR bonus: unique exercises with a PR in this session
+    const PR_BONUS_POINTS = 50
+    const prExerciseIds = new Set(loggedSetsBuffer.filter((ls) => ls.isPR).map((ls) => ls.exerciseId))
+    const prBonusTotal = prExerciseIds.size * PR_BONUS_POINTS
+
+    const surplus = Math.max(0, totalPoints + prBonusTotal - targetPts)
     const newBalance = stats.pointBalance + surplus
 
     const yesterday = toISODate(new Date(Date.now() - 86400000))
@@ -400,7 +406,7 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
 
     const newLongest = Math.max(stats.longestStreakDays, newStreak)
     const newStats: WorkoutStats = {
-      totalPoints: stats.totalPoints + totalPoints,
+      totalPoints: stats.totalPoints + totalPoints + prBonusTotal,
       pointBalance: newBalance,
       currentStreakDays: newStreak,
       longestStreakDays: newLongest,
@@ -409,6 +415,19 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
       lastSessionDate: today,
     }
 
+    const qualityScore = computeSessionQuality({
+      id: 'tmp',
+      date: today,
+      startedAt: activeSession.startedAt,
+      completedAt: now,
+      durationSeconds,
+      mode: activeSession.mode,
+      performed: activeSession.performed,
+      totalPoints: totalPoints + prBonusTotal,
+      bonusPoints: bonusPoints + prBonusTotal,
+      loggedSets: loggedSetsBuffer.length > 0 ? loggedSetsBuffer : undefined,
+    } as WorkoutSession)
+
     const sessionObj: Omit<WorkoutSession, 'id'> = {
       date: today,
       startedAt: activeSession.startedAt,
@@ -416,9 +435,11 @@ export const useWorkoutStore = create<WorkoutStoreState>((set, get) => ({
       durationSeconds,
       mode: activeSession.mode,
       performed: activeSession.performed,
-      totalPoints,
-      bonusPoints,
+      totalPoints: totalPoints + prBonusTotal,
+      bonusPoints: bonusPoints + prBonusTotal,
       loggedSets: loggedSetsBuffer.length > 0 ? loggedSetsBuffer : undefined,
+      sessionType: 'NORMAL',
+      sessionQualityScore: qualityScore,
     }
 
     const weekId = getWeekId(new Date())

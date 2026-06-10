@@ -10,15 +10,23 @@ import { MedalsGallery } from '../components/workout/MedalsGallery'
 import { ProgressView } from '../components/workout/ProgressView'
 import { GoalSettings } from '../components/workout/GoalSettings'
 import { RoutineList } from '../components/workout/RoutineList'
+import { BalanceContent } from '../components/workout/BalanceContent'
+import { FortschrittTab } from '../features/training/components/FortschrittTab'
 import { useWorkoutStore } from '../stores/workoutStore'
 import { useRoutineStore } from '../stores/routineStore'
+import { useProgressionStore } from '../features/training/store/progressionSlice'
+import { useReadinessStore } from '../features/training/store/readinessSlice'
 import { useAuth } from '../hooks/useAuth'
+import { useBloodPressureStore } from '../stores/bloodPressureStore'
+import { useWeightStore } from '../stores/weightStore'
 import { buildExercisesFromRoutine } from '../utils/workout/routineUtils'
+import { format, subDays } from 'date-fns'
 import type { PerformedExercise, Achievement, WorkoutSession } from '../types/workout'
 import type { LoggedSet } from '../types/training'
 import type { Routine, RoutineExercise } from '../types/routine'
 
-type WorkoutTab = 'heute' | 'routinen' | 'verlauf'
+type MainTab = 'training' | 'fortschritt' | 'balance'
+type TrainingSubTab = 'heute' | 'routinen' | 'verlauf'
 type WorkoutView =
   | 'tab'
   | 'session'
@@ -28,7 +36,13 @@ type WorkoutView =
   | 'progress'
   | 'settings'
 
-const TAB_LABELS: Record<WorkoutTab, string> = {
+const MAIN_TAB_LABELS: Record<MainTab, string> = {
+  training: 'Training',
+  fortschritt: 'Fortschritt',
+  balance: 'Balance',
+}
+
+const SUB_TAB_LABELS: Record<TrainingSubTab, string> = {
   heute: 'Heute',
   routinen: 'Routinen',
   verlauf: 'Verlauf',
@@ -52,11 +66,17 @@ export function WorkoutPage() {
     updateGoalSettings,
     buildBonusRound,
     customExercises,
+    movementFamilies,
   } = useWorkoutStore()
 
   const { loadRoutines } = useRoutineStore()
+  const { load: loadReadiness } = useReadinessStore()
+  const { load: loadProgression } = useProgressionStore()
+  const { entries: bpEntries } = useBloodPressureStore()
+  const { entries: weightEntries } = useWeightStore()
 
-  const [tab, setTab] = useState<WorkoutTab>('heute')
+  const [mainTab, setMainTab] = useState<MainTab>('training')
+  const [subTab, setSubTab] = useState<TrainingSubTab>('heute')
   const [view, setView] = useState<WorkoutView>('tab')
   const [summaryData, setSummaryData] = useState<{
     session: WorkoutSession
@@ -66,11 +86,29 @@ export function WorkoutPage() {
   const [activeRoutineExercises, setActiveRoutineExercises] = useState<RoutineExercise[] | undefined>(undefined)
 
   useEffect(() => {
-    if (user?.uid) {
-      load(user.uid)
-      loadRoutines()
-    }
+    if (!user?.uid) return
+    load(user.uid)
+    loadRoutines()
   }, [user?.uid])
+
+  // Load readiness and progression after workout data
+  useEffect(() => {
+    if (!user?.uid || recentSessions.length === 0 && !loading) {
+      // Initial load with available data
+      const today = new Date()
+      const from = format(subDays(today, 7), 'yyyy-MM-dd')
+      const to = format(today, 'yyyy-MM-dd')
+      const recentBp = bpEntries.filter((e) => e.date >= from && e.date <= to)
+      const recentWeight = weightEntries.filter((e) => e.date >= from)
+      loadReadiness(user?.uid ?? '', recentSessions, recentBp, recentWeight)
+    }
+  }, [recentSessions.length, loading])
+
+  useEffect(() => {
+    if (!loading) {
+      loadProgression(recentSessions, movementFamilies, useReadinessStore.getState().history)
+    }
+  }, [loading])
 
   const handleStartSession = useCallback(() => {
     setActiveRoutine(null)
@@ -81,19 +119,22 @@ export function WorkoutPage() {
 
   const handleStartRoutine = useCallback(
     (routine: Routine) => {
-      const exercises = buildExercisesFromRoutine(routine, customExercises.map((ce) => ({
-        id: ce.id,
-        name: ce.name,
-        modes: ce.modes,
-        primaryMuscles: ce.primaryMuscles,
-        secondaryMuscles: ce.secondaryMuscles,
-        difficulty: ce.difficulty,
-        target: ce.target,
-        basePoints: ce.basePoints,
-        mediaUrls: ce.media.map((m) => m.url),
-        instructions: ce.instructions,
-        chairVariantNote: ce.chairVariantNote,
-      })))
+      const exercises = buildExercisesFromRoutine(
+        routine,
+        customExercises.map((ce) => ({
+          id: ce.id,
+          name: ce.name,
+          modes: ce.modes,
+          primaryMuscles: ce.primaryMuscles,
+          secondaryMuscles: ce.secondaryMuscles,
+          difficulty: ce.difficulty,
+          target: ce.target,
+          basePoints: ce.basePoints,
+          mediaUrls: ce.media.map((m) => m.url),
+          instructions: ce.instructions,
+          chairVariantNote: ce.chairVariantNote,
+        }))
+      )
       if (exercises.length === 0) return
       setActiveRoutine(routine)
       setActiveRoutineExercises(routine.exercises)
@@ -216,37 +257,66 @@ export function WorkoutPage() {
           <>
             {view === 'tab' && (
               <>
-                {/* Tab bar */}
+                {/* Main tab bar: Training | Fortschritt | Balance */}
                 <div className="flex gap-1 bg-gray-100 dark:bg-gray-800/60 rounded-2xl p-1 mb-4">
-                  {(['heute', 'routinen', 'verlauf'] as WorkoutTab[]).map((t) => (
+                  {(['training', 'fortschritt', 'balance'] as MainTab[]).map((t) => (
                     <button
                       key={t}
-                      onClick={() => setTab(t)}
+                      onClick={() => setMainTab(t)}
                       className={`flex-1 py-2 text-xs font-semibold rounded-xl transition-all ${
-                        tab === t
+                        mainTab === t
                           ? 'bg-white dark:bg-gray-800 text-primary-500 shadow-sm'
                           : 'text-gray-400 dark:text-gray-500'
                       }`}
                     >
-                      {TAB_LABELS[t]}
+                      {MAIN_TAB_LABELS[t]}
                     </button>
                   ))}
                 </div>
 
-                {tab === 'heute' && (
-                  <WorkoutDashboard
-                    onNavigate={(v) => setView(v as WorkoutView)}
-                    onStartSession={handleStartSession}
-                    onStartBonusSession={handleStartBonusSession}
-                    onStartRoutine={handleStartRoutine}
-                  />
+                {/* Training tab */}
+                {mainTab === 'training' && (
+                  <>
+                    <div className="flex gap-1 bg-gray-50 dark:bg-gray-900/60 rounded-xl p-0.5 mb-4">
+                      {(['heute', 'routinen', 'verlauf'] as TrainingSubTab[]).map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => setSubTab(t)}
+                          className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${
+                            subTab === t
+                              ? 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 shadow-sm'
+                              : 'text-gray-400 dark:text-gray-500'
+                          }`}
+                        >
+                          {SUB_TAB_LABELS[t]}
+                        </button>
+                      ))}
+                    </div>
+
+                    {subTab === 'heute' && (
+                      <WorkoutDashboard
+                        onNavigate={(v) => setView(v as WorkoutView)}
+                        onStartSession={handleStartSession}
+                        onStartBonusSession={handleStartBonusSession}
+                        onStartRoutine={handleStartRoutine}
+                      />
+                    )}
+                    {subTab === 'routinen' && (
+                      <RoutineList onStartRoutine={handleStartRoutine} />
+                    )}
+                    {subTab === 'verlauf' && (
+                      <ProgressView sessions={recentSessions} />
+                    )}
+                  </>
                 )}
-                {tab === 'routinen' && (
-                  <RoutineList onStartRoutine={handleStartRoutine} />
+
+                {/* Fortschritt tab */}
+                {mainTab === 'fortschritt' && (
+                  <FortschrittTab sessions={recentSessions} families={movementFamilies} />
                 )}
-                {tab === 'verlauf' && (
-                  <ProgressView sessions={recentSessions} />
-                )}
+
+                {/* Balance tab */}
+                {mainTab === 'balance' && <BalanceContent />}
               </>
             )}
             {view === 'library' && <ExerciseLibrary onBack={() => setView('tab')} />}

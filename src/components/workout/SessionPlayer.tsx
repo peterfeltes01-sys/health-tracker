@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ChevronRight, ChevronLeft, Check, Plus, Minus, X, Shuffle } from 'lucide-react'
 import type { Exercise, PerformedExercise } from '../../types/workout'
-import type { LoggedSet } from '../../types/training'
+import type { LoggedSet, PRResult } from '../../types/training'
 import { exercisePoints } from '../../utils/workout/scoring'
 import { ExerciseDemo } from './ExerciseDemo'
 import { shuffleExercises } from '../../utils/workout/routineUtils'
@@ -10,6 +10,13 @@ import { ProgressionChip } from './ProgressionChip'
 import { RestTimerOverlay } from './RestTimerOverlay'
 import { useWorkoutStore } from '../../stores/workoutStore'
 import { broadToTraining } from '../../features/workout/logic/muscleMapping'
+import { ReadinessCheckinSheet } from '../../features/training/components/ReadinessCheckinSheet'
+import { PrCelebration } from '../../features/training/components/PrCelebration'
+import { useReadinessStore } from '../../features/training/store/readinessSlice'
+import { detectPR } from '../../utils/training/pr'
+import { useAuth } from '../../hooks/useAuth'
+import { useBloodPressureStore } from '../../stores/bloodPressureStore'
+import { useWeightStore } from '../../stores/weightStore'
 
 const MUSCLE_LABELS: Record<string, string> = {
   brust: 'Brust',
@@ -128,7 +135,11 @@ interface SessionPlayerProps {
 }
 
 export function SessionPlayer({ exercises: initialExercises, routineExercises, onFinish, onAbort }: SessionPlayerProps) {
-  const { addLoggedSet, startRest, movementFamilies } = useWorkoutStore()
+  const { addLoggedSet, startRest, movementFamilies, recentSessions } = useWorkoutStore()
+  const { saveCheckin } = useReadinessStore()
+  const { user } = useAuth()
+  const { entries: bpEntries } = useBloodPressureStore()
+  const { entries: weightEntries } = useWeightStore()
 
   const [exercises, setExercises] = useState(initialExercises)
   const [shuffled, setShuffled] = useState(false)
@@ -146,7 +157,23 @@ export function SessionPlayer({ exercises: initialExercises, routineExercises, o
   const [showShuffleHint, setShowShuffleHint] = useState(!!routineExercises && !shuffled && currentIndex === 0 && performed.length === 0)
   const setStartTimeRef = useRef<number>(Date.now())
 
+  // Pre-session readiness check-in
+  const [showCheckin, setShowCheckin] = useState(true)
+  const [activePR, setActivePR] = useState<PRResult | null>(null)
+
   const exercise = exercises[currentIndex]
+
+  const handleCheckinDone = useCallback(
+    async (values: { sleep?: number; energy?: number; soreness?: number } | null) => {
+      setShowCheckin(false)
+      if (user?.uid) {
+        const recentBp = bpEntries.slice(-14)
+        const recentWeight = weightEntries.slice(-14)
+        await saveCheckin(values, recentSessions, recentBp, recentWeight, user.uid)
+      }
+    },
+    [user?.uid, bpEntries, weightEntries, recentSessions, saveCheckin]
+  )
 
   const handleShuffle = useCallback(() => {
     if (!routineExercises) return
@@ -207,8 +234,14 @@ export function SessionPlayer({ exercises: initialExercises, routineExercises, o
     // Record per-set logged entry
     const restTaken = null // will be set when timer completes, tracked separately
     const ls = buildLoggedSet(reps, currentRir, restTaken)
-    setLocalLoggedSets((prev) => [...prev, ls])
-    addLoggedSet(ls)
+
+    // PR detection (compare against committed history, not current session buffer)
+    const prResult = detectPR(ls, recentSessions)
+    const lsWithPR: LoggedSet = prResult ? { ...ls, isPR: true } : ls
+    if (prResult) setActivePR(prResult)
+
+    setLocalLoggedSets((prev) => [...prev, lsWithPR])
+    addLoggedSet(lsWithPR)
     setCurrentRir(null)
 
     if (currentSet >= exercise.target.sets) {
@@ -284,6 +317,15 @@ export function SessionPlayer({ exercises: initialExercises, routineExercises, o
 
   return (
     <div className="fixed inset-0 z-50 bg-gray-50 dark:bg-gray-950 flex flex-col">
+      {/* Pre-session readiness check-in */}
+      {showCheckin && (
+        <ReadinessCheckinSheet onComplete={handleCheckinDone} />
+      )}
+
+      {/* PR celebration overlay */}
+      {activePR && (
+        <PrCelebration pr={activePR} onDone={() => setActivePR(null)} />
+      )}
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-6 pb-3">
         <button onClick={onAbort} className="p-2 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">

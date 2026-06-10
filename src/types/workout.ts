@@ -1,4 +1,4 @@
-import type { TrainingMuscleGroup, TrainingIntent, LoggedSet } from './training'
+import type { TrainingMuscleGroup, TrainingIntent, LoggedSet, ReadinessBand } from './training'
 
 export type ExerciseMode = 'bands' | 'bodyweight' | 'chair'
 
@@ -47,6 +47,9 @@ export interface PerformedExercise {
   metTarget: boolean
 }
 
+export type SessionType = 'NORMAL' | 'DELOAD'
+export type SessionAdjustment = 'none' | 'volume' | 'volume_and_regression'
+
 export interface WorkoutSession {
   id: string
   date: string
@@ -58,6 +61,12 @@ export interface WorkoutSession {
   totalPoints: number
   bonusPoints: number
   loggedSets?: LoggedSet[]
+  // Readiness snapshot (optional, backward-compatible)
+  readinessScore?: number
+  readinessBand?: ReadinessBand
+  adjustmentApplied?: SessionAdjustment
+  sessionQualityScore?: number
+  sessionType?: SessionType
 }
 
 export interface WorkoutStats {

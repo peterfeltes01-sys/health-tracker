@@ -1,3 +1,93 @@
+// ── Readiness ──────────────────────────────────────────────────────────────
+
+export type ReadinessBand = 'FULL' | 'REDUCED' | 'RECOVERY'
+
+export interface ReadinessCheckin {
+  id: string
+  userId: string
+  date: string
+  sleep?: number
+  energy?: number
+  soreness?: number
+  score: number
+  band: ReadinessBand
+  factors: {
+    subjective?: number
+    frequency: number
+    recovery: number
+    bpTrend?: number
+    weightTrend?: number
+  }
+  createdAt: number
+}
+
+// ── Progression decisions ─────────────────────────────────────────────────
+
+export interface ProgressionDecision {
+  id?: string
+  suggestionId: string
+  exerciseId: string
+  action: 'accepted' | 'dismissed'
+  timestamp: number
+}
+
+export interface TrainingProgressionSuggestion {
+  id: string
+  exerciseId: string
+  exerciseName: string
+  kind: 'advance' | 'regress' | 'hold'
+  fromLevel?: number
+  toLevel?: number
+  toExerciseId?: string
+  toExerciseName?: string
+  nextTargetReps?: number
+  reason: string
+  suggestedAt: number
+}
+
+// ── Deload ────────────────────────────────────────────────────────────────
+
+export type DeloadTrigger = 'stagnation' | 'readiness_trend'
+
+export interface DeloadSuggestion {
+  id: string
+  trigger: DeloadTrigger
+  reason: string
+  suggestedAt: number
+}
+
+// ── Analytics ─────────────────────────────────────────────────────────────
+
+export interface ExerciseStrengthEntry {
+  exerciseId: string
+  exerciseName: string
+  currentLevel: number
+  trend: 'up' | 'flat' | 'down'
+  recentReps: number[]
+}
+
+export interface MuscleRadarEntry {
+  muscle: TrainingMuscleGroup
+  score: number
+}
+
+export interface StrengthProfile {
+  exercises: ExerciseStrengthEntry[]
+  radarData: MuscleRadarEntry[]
+}
+
+// ── PRs ──────────────────────────────────────────────────────────────────
+
+export interface PRResult {
+  exerciseId: string
+  exerciseName: string
+  reps: number
+  variationLevel: number
+  date: string
+}
+
+// ── Training types ────────────────────────────────────────────────────────
+
 export type TrainingMuscleGroup =
   | 'chest'
   | 'back_lats'
@@ -38,6 +128,7 @@ export interface LoggedSet {
   isWarmup: boolean
   restTakenSeconds: number | null
   timestamp: string
+  isPR?: boolean
 }
 
 export const TRAINING_MUSCLE_LABELS: Record<TrainingMuscleGroup, string> = {

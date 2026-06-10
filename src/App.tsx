@@ -48,6 +48,8 @@ import { setRoutineRepository } from './lib/routineRepositoryRegistry'
 import { setExerciseMediaRepository } from './lib/exerciseMediaRepositoryRegistry'
 import { setMediaUploader } from './lib/mediaUploaderRegistry'
 import { setMovementFamilyRepository } from './lib/movementFamilyRepositoryRegistry'
+import { setReadinessRepository } from './lib/readinessRepositoryRegistry'
+import { setProgressionDecisionRepository } from './lib/progressionDecisionRepositoryRegistry'
 import { FirebaseMediaUploader, NoOpMediaUploader } from './lib/mediaUploader'
 import { WorkoutFirestoreRepository } from './repositories/WorkoutFirestoreRepository'
 import { WorkoutLocalStorageRepository } from './repositories/WorkoutLocalStorageRepository'
@@ -61,6 +63,12 @@ import { ExerciseMediaFirestoreRepository } from './repositories/ExerciseMediaFi
 import { ExerciseMediaLocalStorageRepository } from './repositories/ExerciseMediaLocalStorageRepository'
 import { MovementFamilyFirestoreRepository } from './repositories/MovementFamilyFirestoreRepository'
 import { MovementFamilyLocalStorageRepository } from './repositories/MovementFamilyLocalStorageRepository'
+import { ReadinessFirestoreRepository } from './features/training/repositories/ReadinessFirestoreRepository'
+import { ReadinessLocalStorageRepository } from './features/training/repositories/ReadinessLocalStorageRepository'
+import { ProgressionDecisionFirestoreRepository } from './features/training/repositories/ProgressionDecisionFirestoreRepository'
+import { ProgressionDecisionLocalStorageRepository } from './features/training/repositories/ProgressionDecisionLocalStorageRepository'
+import { useProgressionStore } from './features/training/store/progressionSlice'
+import { useReadinessStore } from './features/training/store/readinessSlice'
 import { BalancePage } from './pages/BalancePage'
 
 function ThemeController() {
@@ -108,6 +116,8 @@ function AppCore() {
       setRoutineRepository(new RoutineFirestoreRepository(user.uid))
       setExerciseMediaRepository(new ExerciseMediaFirestoreRepository(user.uid))
       setMovementFamilyRepository(new MovementFamilyFirestoreRepository(user.uid))
+      setReadinessRepository(new ReadinessFirestoreRepository(user.uid))
+      setProgressionDecisionRepository(new ProgressionDecisionFirestoreRepository(user.uid))
       setMediaUploader(new FirebaseMediaUploader())
       useExerciseMediaStore.getState().setUid(user.uid)
       loadSettings()
@@ -135,6 +145,10 @@ function AppCore() {
       setRoutineRepository(new RoutineLocalStorageRepository())
       setExerciseMediaRepository(new ExerciseMediaLocalStorageRepository())
       setMovementFamilyRepository(new MovementFamilyLocalStorageRepository())
+      setReadinessRepository(new ReadinessLocalStorageRepository())
+      setProgressionDecisionRepository(new ProgressionDecisionLocalStorageRepository())
+      useProgressionStore.getState().reset()
+      useReadinessStore.getState().reset()
       setMediaUploader(new NoOpMediaUploader())
     }
   }, [user?.uid, authLoading])
