@@ -32,7 +32,7 @@ function rebuildSuggestions(
   history: WorkoutSession[],
   families: MovementFamily[],
   decisions: ProgressionDecision[],
-  conservativeIds: Set<string>
+  _conservativeIds: Set<string>
 ): TrainingProgressionSuggestion[] {
   const exerciseIds = new Set<string>()
   for (const s of history) {

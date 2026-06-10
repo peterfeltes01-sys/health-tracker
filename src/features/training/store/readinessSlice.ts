@@ -26,7 +26,7 @@ interface ReadinessState {
   reset(): void
 }
 
-export const useReadinessStore = create<ReadinessState>((set, get) => ({
+export const useReadinessStore = create<ReadinessState>((set) => ({
   currentScore: null,
   currentBand: null,
   history: [],
